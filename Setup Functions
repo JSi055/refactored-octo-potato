@@ -1,0 +1,44 @@
+void input_Setup(void);
+void test_Output(void);
+void UART_Setup(void);
+
+int main(void) {
+    input_Setup();
+    UART_Setup();
+    test_Output();
+    while(1){
+    
+    }
+}
+
+void input_Setup(void){
+    AD1PCFG = 0xFDFF;
+    AD1CON1 = 0x00E4; //SSRC = 111, ASAM = 1, 
+    AD1CON2 = 0x0;    //VCFG needed,  
+    AD1CON3 = 0x1F01; //ADCS = 1, SAMC = 111
+    AD1CHS = 0x0009;  //CH0SA = 9
+//    IFS0bits.AD1IF = 0; //optional interrupt
+//    IEC0bits.AD1IE = 1;
+    AD1CON1bits.ADON = 1;
+}
+
+void test_Output(void){
+    TRISB = TRISB & 0b00000000111000000;  //set outputs
+    LATB = 0b00000001110000000; //all 3 set to one for now
+}
+
+void UART_Setup(void){
+    __builtin_write_OSCCONL(OSCCON & 0xBF);
+    //RPINR18bits.U1RXR =
+    //RPINR18bits.U1CTSR =
+    //RPOR bits.RP R = 3;
+    //RPOR bits.RP R = 3;
+    __builtin_write_OSCCONL(OSCCON | 0x40);
+    
+    U1BRG = 99;     //baud = 10000, temporary
+    U1MODE = 0000;  //PDSEL = 00, STSEL = 0; BRGH = 0, UEN = 0;
+//    IEC0bits.U1TXIE = 1; //optional  interrupts
+//    IEC0bits.U1RXIE = 1;
+    U1MODEbits.UARTEN = 1;
+    U1STA = 0x400;  //UXTEN = 1; 
+}
