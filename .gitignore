@@ -1,0 +1,3 @@
+build/*
+.generated_files/*
+# nbproject/* # TODO: see what MPLAB X project config files are needed.

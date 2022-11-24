@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=BatteryAnalizer.X
+PROJECTNAME=refactored-octo-potato
 
 # Active Configuration
 DEFAULTCONF=default

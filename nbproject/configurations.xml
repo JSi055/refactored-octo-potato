@@ -27,10 +27,12 @@
         <itemPath>CUU/CUU_Parallel_I80.h</itemPath>
         <itemPath>CUU/CUU_Parallel_M68.h</itemPath>
         <itemPath>CUU/CUU_Serial.h</itemPath>
-        <itemPath>CUU/Noritake_VFD_CUU.cpp</itemPath>
         <itemPath>CUU/Noritake_VFD_CUU.h</itemPath>
+        <itemPath>CUU/Noritake_VFD_CUU.c</itemPath>
       </logicalFolder>
       <itemPath>analizer_main_v001.c</itemPath>
+      <itemPath>CUU/CUU_M86_4bit_ported.c</itemPath>
+      <itemPath>Final_Project_main.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

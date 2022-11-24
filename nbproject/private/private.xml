@@ -3,8 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/home/xcube/Desktop/SYNC/FALL2022/EE2361/MPLAB_Projects/BatteryAnalizer.X/CUU/Noritake_VFD_CUU.cpp</file>
-            <file>file:/home/xcube/Desktop/SYNC/FALL2022/EE2361/MPLAB_Projects/BatteryAnalizer.X/analizer_main_v001.c</file>
+            <file>file:/home/xcube/Desktop/SYNC/FALL2022/EE2361/MPLAB_Projects/refactored-octo-potato/Final_Project_main.c</file>
+            <file>file:/home/xcube/Desktop/SYNC/FALL2022/EE2361/MPLAB_Projects/refactored-octo-potato/CUU/CUU_M86_4bit_ported.c</file>
+            <file>file:/home/xcube/Desktop/SYNC/FALL2022/EE2361/MPLAB_Projects/refactored-octo-potato/CUU/CUU_Parallel_M68.h</file>
         </group>
     </open-files>
 </project-private>
