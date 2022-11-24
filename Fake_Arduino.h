@@ -14,6 +14,9 @@
 extern "C" {
 #endif
 
+#define false 0 // FIXME: this is risky
+#define true 1
+
 #define HIGH 0x1
 #define LOW  0x0
 

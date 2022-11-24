@@ -1,18 +1,25 @@
-#include <avr/io.h>
+//#include <avr/io.h>
 #include <stddef.h>
 
-#include <CUU_Interface.h>
-#include <Noritake_VFD_CUU.h>
-#include <util/delay.h>
+#include "CUU_M68_4bit_ported.h"
+#include "Noritake_VFD_CUU_ported.h"
+//#include <util/delay.h>
 
 #define MIN_DELAY 5
 
-void Noritake_VFD_CUU::begin(int cols, int lines) {
+    void brightnessBoost(Noritake_VFD_CUU* this) { this->hasBrightnessBoost = true; }
+    void cu20045_uw4j(Noritake_VFD_CUU* this) {  this->is_cu20045_uw4j = true; };
+    
+    void bcVFD(Noritake_VFD_CUU* this) { this->bc_vfd = true; }
+    void japaneseFont(Noritake_VFD_CUU* this) { this->bc_font = true; CUU_home(); }
+    void europeanFont(Noritake_VFD_CUU* this) { this->bc_font = false; CUU_home(); }
+
+void begin(Noritake_VFD_CUU* this, int cols, int lines) {
     this->cols = cols;
     this->lines = lines;
 }
 
-void Noritake_VFD_CUU::interface(CUU_Interface &interface) {
+void interface(Noritake_VFD_CUU* this, CUU_Interface* interface) {
     this->io = &interface;
 }
 
@@ -20,7 +27,7 @@ void Noritake_VFD_CUU::interface(CUU_Interface &interface) {
 // Initialize the VFD module. This must be called before any other
 // methods.
 int
-Noritake_VFD_CUU::CUU_init() {
+CUU_init() {
     io->init();
     CUU_brightness(100);
 	CUU_displayOn();
@@ -34,7 +41,7 @@ Noritake_VFD_CUU::CUU_init() {
 //Send command to the VFD controller.
 //data: command to send
 void
-Noritake_VFD_CUU::CUU_command(uint8_t data) {
+CUU_command(uint8_t data) {
 	io->write(data, false);
 	_delay_us(MIN_DELAY);
 }
@@ -44,7 +51,7 @@ Noritake_VFD_CUU::CUU_command(uint8_t data) {
 //Write data to the VFD controller.
 //data: byte to send
 void
-Noritake_VFD_CUU::CUU_writeData(uint8_t data) {
+CUU_writeData(uint8_t data) {
 	io->write(data, true);
 	_delay_us(MIN_DELAY);
 }
@@ -53,7 +60,7 @@ Noritake_VFD_CUU::CUU_writeData(uint8_t data) {
 //uint8_t CUU_readData();
 //Read command from the VFD controller.
 uint8_t
-Noritake_VFD_CUU::CUU_readCommand() {
+CUU_readCommand() {
 	uint8_t data = io->read(false);
 	_delay_us(MIN_DELAY);
 	return data;
@@ -65,7 +72,7 @@ Noritake_VFD_CUU::CUU_readCommand() {
 //same direction as if a write had occurred. The display does not
 //shift even if autoscroll is enabled.
 uint8_t
-Noritake_VFD_CUU::CUU_readData() {
+CUU_readData() {
 	uint8_t data = io->read(true);
 	_delay_us(MIN_DELAY);
 	return data;
@@ -79,7 +86,7 @@ Noritake_VFD_CUU::CUU_readData() {
 //then the DDRAM address will be returned. When a CGRAM address
 //is read bit6 (0x40) will be set.
 uint8_t
-Noritake_VFD_CUU::CUU_readAddress() {
+CUU_readAddress() {
 	return CUU_readCommand() & ~0x80;
 }
 
@@ -92,12 +99,12 @@ Noritake_VFD_CUU::CUU_readAddress() {
 //in the same direction as if a write had occurred. The display
 // does not shift even if autoscroll is enabled.
 uint8_t
-Noritake_VFD_CUU::CUU_readRAM() {
+CUU_readRAM() {
 	return CUU_readData();
 }
 
 void
-Noritake_VFD_CUU::nextLine() {
+nextLine() {
 	uint8_t x = CUU_readAddress();
     if (is_cu20045_uw4j) {
     	if (x < 0x20)
@@ -128,7 +135,7 @@ Noritake_VFD_CUU::nextLine() {
 //The effects of printing past the end of the line depends on the model.
 //data:	character to print
 void
-Noritake_VFD_CUU::print(char data) {
+print(char data) {
 	CUU_writeData(data);
 }
 
@@ -137,7 +144,7 @@ Noritake_VFD_CUU::print(char data) {
 //The effects of printing past the end of the line depends on the model.
 //str: a null-terminated string
 void
-Noritake_VFD_CUU::print(const char *str) {
+print(const char *str) {
 	while (*str)
 		print(*str++);
 }
@@ -148,7 +155,7 @@ Noritake_VFD_CUU::print(const char *str) {
 //buffer:	characters to print
 //size:	number of characters to print
 void
-Noritake_VFD_CUU::print(const uint8_t *buffer, size_t size) {
+print(const uint8_t *buffer, size_t size) {
 	while (size--)
 		print((char) *buffer++);
 }
@@ -159,7 +166,7 @@ Noritake_VFD_CUU::print(const uint8_t *buffer, size_t size) {
 //The effects of printing past the end of the line depends on the model.
 //data:	character to print
 void
-Noritake_VFD_CUU::println(char data) {
+println(char data) {
 	print(data);
 	nextLine();
 }
@@ -170,7 +177,7 @@ Noritake_VFD_CUU::println(char data) {
 //The effects of printing past the end of the line depends on the model.
 //str: a null-terminated string
 void
-Noritake_VFD_CUU::println(const char *str) {
+println(const char *str) {
 	print(str);
 	nextLine();
 }
@@ -182,20 +189,20 @@ Noritake_VFD_CUU::println(const char *str) {
 //buffer:	characters to print
 //size:	number of characters to print
 void
-Noritake_VFD_CUU::println(const uint8_t *buffer, size_t size) {
+println(const uint8_t *buffer, size_t size) {
 	print(buffer, size);
 	nextLine();
 }
 
 void
-Noritake_VFD_CUU::printNumber(unsigned long number, int base) {
+printNumber(unsigned long number, int base) {
 	if (number/base)
 		printNumber(number/base, base);
 	print("0123456789ABCDEF"[number%base]);
 }
 
 void
-Noritake_VFD_CUU::printNumber(long number, int base) {
+printNumber(long number, int base) {
 	if (number/base)
 		printNumber(number/base, base);
 	print("0123456789ABCDEF"[number%base]);
@@ -206,7 +213,7 @@ Noritake_VFD_CUU::printNumber(long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::print(int number, int base) {
+print(int number, int base) {
 	if (number < 0) {
 		print('-');
 		number = -number;
@@ -220,7 +227,7 @@ Noritake_VFD_CUU::print(int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::print(unsigned int number, int base) {
+print(unsigned int number, int base) {
 	printNumber((unsigned long)number, base);
 }
 
@@ -229,7 +236,7 @@ Noritake_VFD_CUU::print(unsigned int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::print(long number, int base) {
+print(long number, int base) {
 	if (number < 0) {
 		print('-');
 		number = -number;
@@ -243,7 +250,7 @@ Noritake_VFD_CUU::print(long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::print(unsigned long number, int base) {
+print(unsigned long number, int base) {
 	printNumber(number, base);
 }
 
@@ -254,7 +261,7 @@ Noritake_VFD_CUU::print(unsigned long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::println(int number, int base) {
+println(int number, int base) {
 	print((long)number, base);
 	nextLine();
 }
@@ -266,7 +273,7 @@ Noritake_VFD_CUU::println(int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::println(unsigned int number, int base) {
+println(unsigned int number, int base) {
 	print((unsigned long)number, base);
 	nextLine();
 }
@@ -278,7 +285,7 @@ Noritake_VFD_CUU::println(unsigned int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::println(long number, int base) {
+println(long number, int base) {
 	print(number, base);
 	nextLine();
 }
@@ -290,7 +297,7 @@ Noritake_VFD_CUU::println(long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-Noritake_VFD_CUU::println(unsigned long number, int base) {
+println(unsigned long number, int base) {
 	print(number, base);
 	nextLine();
 }
@@ -300,7 +307,7 @@ Noritake_VFD_CUU::println(unsigned long number, int base) {
 // cursor home. Reset display shift to no shift. Set the entry mode to
 // left-to-right.
 void
-Noritake_VFD_CUU::CUU_clearScreen() {
+CUU_clearScreen() {
 	CUU_command(0x01);
 	_delay_ms(5);
 }
@@ -309,7 +316,7 @@ Noritake_VFD_CUU::CUU_clearScreen() {
 // Moves the cursor back to the home position (top-left). Display
 // shift is reset to no shift.
 void
-Noritake_VFD_CUU::CUU_home() {
+CUU_home() {
 	CUU_command(0x02 + bc_font);
 	_delay_us(MIN_DELAY);
 }
@@ -331,7 +338,7 @@ Noritake_VFD_CUU::CUU_home() {
 //	2                       0x14 - 0x27     0x40 - 0x53
 //	3                       0x54 - 0x67     0x60 - 0x73
 void
-Noritake_VFD_CUU::CUU_setCursor(uint8_t pos) {
+CUU_setCursor(uint8_t pos) {
 	CUU_command(0x80|pos);
 	_delay_us(500);
 }
@@ -342,7 +349,7 @@ Noritake_VFD_CUU::CUU_setCursor(uint8_t pos) {
 //col: column to move to
 //line: line to move to
 void
-Noritake_VFD_CUU::CUU_setCursor(uint8_t col, uint8_t line) {
+CUU_setCursor_2d(uint8_t col, uint8_t line) {
 	if (col < cols && line < lines) {
         if (is_cu20045_uw4j)
     		switch (line) {
@@ -378,7 +385,7 @@ Noritake_VFD_CUU::CUU_setCursor(uint8_t col, uint8_t line) {
 }
 
 void
-Noritake_VFD_CUU::setDisplay() {
+setDisplay() {
 	CUU_command(8+display*4+cursor*2+blink);
 	_delay_us(MIN_DELAY);
 }
@@ -386,7 +393,7 @@ Noritake_VFD_CUU::setDisplay() {
 // ----------------------------------------------------------------
 // Turn the display on.
 void
-Noritake_VFD_CUU::CUU_displayOn() {
+CUU_displayOn() {
 	display = true;
 	setDisplay();
 }
@@ -395,7 +402,7 @@ Noritake_VFD_CUU::CUU_displayOn() {
 // Turn the display off. This sends the module into a low power
 // consumption mode. See the manual for your module for details.
 void
-Noritake_VFD_CUU::CUU_displayOff() {
+CUU_displayOff() {
 	display = false;
 	setDisplay();
 }
@@ -405,7 +412,7 @@ Noritake_VFD_CUU::CUU_displayOff() {
 //on the following models: CU20045-UW4J, CU20045-UW5J, CU20045-UW5A,
 //CU20045-UW7J, CU20049-UW2J, CU20049-UW2A
 void
-Noritake_VFD_CUU::CUU_cursorOn() {
+CUU_cursorOn() {
 	cursor = true;
 	setDisplay();
 }
@@ -413,7 +420,7 @@ Noritake_VFD_CUU::CUU_cursorOn() {
 // ----------------------------------------------------------------
 // Turn the underline cursor off.
 void
-Noritake_VFD_CUU::CUU_cursorOff() {
+CUU_cursorOff() {
 	cursor = false;
 	setDisplay();
 }
@@ -421,7 +428,7 @@ Noritake_VFD_CUU::CUU_cursorOff() {
 // ----------------------------------------------------------------
 // Enable the full-cell block (blinking) cursor.
 void
-Noritake_VFD_CUU::CUU_blinkOn() {
+CUU_blinkOn() {
 	blink = true;
 	setDisplay();
 }
@@ -429,7 +436,7 @@ Noritake_VFD_CUU::CUU_blinkOn() {
 // ----------------------------------------------------------------
 // Disable the full-cell block (blinking) cursor.
 void
-Noritake_VFD_CUU::CUU_blinkOff() {
+CUU_blinkOff() {
 	blink = false;
 	setDisplay();
 }
@@ -439,7 +446,7 @@ Noritake_VFD_CUU::CUU_blinkOff() {
 // character will no longer be displayed and the previous rightmost
 // character will now be the second from the right.
 void
-Noritake_VFD_CUU::CUU_scrollDisplayLeft() {
+CUU_scrollDisplayLeft() {
 	CUU_command(0x18);
 	_delay_us(MIN_DELAY);
 }
@@ -449,13 +456,13 @@ Noritake_VFD_CUU::CUU_scrollDisplayLeft() {
 // character will no longer be displayed and the previous leftmost
 // character will now be the second.
 void
-Noritake_VFD_CUU::CUU_scrollDisplayRight() {
+CUU_scrollDisplayRight() {
 	CUU_command(0x1c);
 	_delay_us(MIN_DELAY);
 }
 
 void
-Noritake_VFD_CUU::setDirection() {
+setDirection() {
 	CUU_command(4+2*(!rightToLeft)+autoscroll);
 	_delay_us(MIN_DELAY);
 }
@@ -464,7 +471,7 @@ Noritake_VFD_CUU::setDirection() {
 // Set the entry mode to move the cursor to the right after a
 // character has been inserted.
 void
-Noritake_VFD_CUU::CUU_leftToRight() {
+CUU_leftToRight() {
 	rightToLeft = false;
 	setDirection();
 }
@@ -473,7 +480,7 @@ Noritake_VFD_CUU::CUU_leftToRight() {
 // Set the entry mode to move the cursor to the left after a
 // character has been inserted.
 void
-Noritake_VFD_CUU::CUU_rightToLeft() {
+CUU_rightToLeft() {
 	rightToLeft = true;
 	setDirection();
 }
@@ -481,7 +488,7 @@ Noritake_VFD_CUU::CUU_rightToLeft() {
 // ----------------------------------------------------------------
 // Automatically scroll the display whenever a character is printed.
 void
-Noritake_VFD_CUU::CUU_autoscroll() {
+CUU_autoscroll() {
 	autoscroll = true;
 	setDirection();
 }
@@ -490,7 +497,7 @@ Noritake_VFD_CUU::CUU_autoscroll() {
 // Do not automatically scroll the display whenever a character is
 // printed.
 void
-Noritake_VFD_CUU::CUU_noAutoscroll() {
+CUU_noAutoscroll() {
 	autoscroll = false;
 	setDirection();
 }
@@ -509,7 +516,7 @@ Noritake_VFD_CUU::CUU_noAutoscroll() {
 //	CU20045-UW4J, CU20045-UW5J, CU20045-UW5A,
 //	CU20045-UW7J, CU20049-UW2J, CU20049-UW2A
 void
-Noritake_VFD_CUU::CUU_createChar(uint8_t num, uint8_t *bits) {
+CUU_createChar(uint8_t num, uint8_t *bits) {
 	if (num >= 8)
 		return;
 	uint8_t	addr = CUU_readAddress();
@@ -540,7 +547,7 @@ Noritake_VFD_CUU::CUU_createChar(uint8_t num, uint8_t *bits) {
 //	The fifth bit of the eighth byte sets the whole row if set.
 //	Other bits in the eighth byte are ignored.
 void
-Noritake_VFD_CUU::CUU_readChar(uint8_t *data, uint8_t num) {
+CUU_readChar(uint8_t *data, uint8_t num) {
 	if (num >= 8)
 		return;
 		
@@ -564,7 +571,7 @@ Noritake_VFD_CUU::CUU_readChar(uint8_t *data, uint8_t num) {
 // uint8_t CUU_readBusy();
 //Return the busy flag. 1 indicates the device is busy.
 uint8_t
-Noritake_VFD_CUU::CUU_readBusy() {
+CUU_readBusy() {
 	return (CUU_readCommand() & 0x80) != 0;
 }
 
@@ -578,7 +585,7 @@ Noritake_VFD_CUU::CUU_readBusy() {
 //		CU16025-UX6A
 //		CU20025-UX1J
 void
-Noritake_VFD_CUU::CUU_brightness(int brightness) {
+CUU_brightness(int brightness) {
     if (bc_vfd) {
         if (brightness <= 0 || brightness > 100) return;
         CUU_command(0x30 + (10000-brightness*100)/625);

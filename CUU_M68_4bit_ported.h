@@ -15,9 +15,10 @@ extern "C" {
 #include "Fake_Arduino.h"
 //class CUU_Interface {
 
+//typedef struct CUU_Interface_struct CUU_Interface;
 typedef struct CUU_Interface_struct {
-    void *write();
-    uint8_t *read();
+    void (*write)(struct CUU_Interface_struct*, uint8_t, char);
+    uint8_t (*read)(struct CUU_Interface_struct*, char);
     uint8_t RS_PIN;
     uint8_t RW_PIN;
     uint8_t E_PIN;
@@ -30,8 +31,8 @@ typedef struct CUU_Interface_struct {
 //public:
 void CUU_M68_4_init(CUU_Interface *inter);
 
-void CUU_M68_4_write(CUU_Interface *inter, uint8_t data, char rs) = 0;
-uint8_t CUU_M68_4_read(char rs);
+void CUU_M68_4_write(CUU_Interface *inter, uint8_t data, char rs);
+uint8_t CUU_M68_4_read(CUU_Interface *inter, char rs);
 //    virtual bool is8bit() = 0;
 //};
 
