@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=analizer_main_v001.c CUU/Noritake_VFD_CUU.c CUU/CUU_M86_4bit_ported.c Final_Project_main.c
+SOURCEFILES_QUOTED_IF_SPACED=CUU/Noritake_VFD_CUU.c Final_Project_main.c CUU/Fake_Arduino.c CUU/Noritake_VFD_CUU_1.c CUU/CUU_M68_4bit_ported.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/analizer_main_v001.o ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o ${OBJECTDIR}/Final_Project_main.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/analizer_main_v001.o.d ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o.d ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o.d ${OBJECTDIR}/Final_Project_main.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/CUU/Noritake_VFD_CUU.o ${OBJECTDIR}/Final_Project_main.o ${OBJECTDIR}/CUU/Fake_Arduino.o ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/CUU/Noritake_VFD_CUU.o.d ${OBJECTDIR}/Final_Project_main.o.d ${OBJECTDIR}/CUU/Fake_Arduino.o.d ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o.d ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/analizer_main_v001.o ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o ${OBJECTDIR}/Final_Project_main.o
+OBJECTFILES=${OBJECTDIR}/CUU/Noritake_VFD_CUU.o ${OBJECTDIR}/Final_Project_main.o ${OBJECTDIR}/CUU/Fake_Arduino.o ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o
 
 # Source Files
-SOURCEFILES=analizer_main_v001.c CUU/Noritake_VFD_CUU.c CUU/CUU_M86_4bit_ported.c Final_Project_main.c
+SOURCEFILES=CUU/Noritake_VFD_CUU.c Final_Project_main.c CUU/Fake_Arduino.c CUU/Noritake_VFD_CUU_1.c CUU/CUU_M68_4bit_ported.c
 
 
 
@@ -95,23 +95,11 @@ MP_LINKER_FILE_OPTION=,--script=p24FJ64GA002.gld
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/analizer_main_v001.o: analizer_main_v001.c  .generated_files/flags/default/ecb3a0872ba5391439f80ed875b554b7db7d5474 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
-	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/analizer_main_v001.o.d 
-	@${RM} ${OBJECTDIR}/analizer_main_v001.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  analizer_main_v001.c  -o ${OBJECTDIR}/analizer_main_v001.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/analizer_main_v001.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
-	
 ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o: CUU/Noritake_VFD_CUU.c  .generated_files/flags/default/463c0cc5c82bc253eeba5f450a56791bb6d70ddf .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}/CUU" 
 	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o.d 
 	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/Noritake_VFD_CUU.c  -o ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/Noritake_VFD_CUU.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
-	
-${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o: CUU/CUU_M86_4bit_ported.c  .generated_files/flags/default/e5a5aaa3e10e1816212dbec3015e0e0f5deb814e .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
-	@${MKDIR} "${OBJECTDIR}/CUU" 
-	@${RM} ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o.d 
-	@${RM} ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/CUU_M86_4bit_ported.c  -o ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
 ${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/default/541a8c44d8f5bfef88bac3ed8a9dffa032869121 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
@@ -119,30 +107,54 @@ ${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/
 	@${RM} ${OBJECTDIR}/Final_Project_main.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  Final_Project_main.c  -o ${OBJECTDIR}/Final_Project_main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Final_Project_main.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-else
-${OBJECTDIR}/analizer_main_v001.o: analizer_main_v001.c  .generated_files/flags/default/c6ad3b06793d5b7744ef194edb977abe74a11d04 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
-	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/analizer_main_v001.o.d 
-	@${RM} ${OBJECTDIR}/analizer_main_v001.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  analizer_main_v001.c  -o ${OBJECTDIR}/analizer_main_v001.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/analizer_main_v001.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+${OBJECTDIR}/CUU/Fake_Arduino.o: CUU/Fake_Arduino.c  .generated_files/flags/default/6bd3986648034325c68b8fe3f865566f2ec7ae16 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}/CUU" 
+	@${RM} ${OBJECTDIR}/CUU/Fake_Arduino.o.d 
+	@${RM} ${OBJECTDIR}/CUU/Fake_Arduino.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/Fake_Arduino.c  -o ${OBJECTDIR}/CUU/Fake_Arduino.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/Fake_Arduino.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
+${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o: CUU/Noritake_VFD_CUU_1.c  .generated_files/flags/default/2b5fcdbd2b816ce61c701d149a3d04c444e98f4d .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}/CUU" 
+	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o.d 
+	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/Noritake_VFD_CUU_1.c  -o ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o: CUU/CUU_M68_4bit_ported.c  .generated_files/flags/default/4af981940f65b7c93cd3b2c44b5e19d6e5df7868 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}/CUU" 
+	@${RM} ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o.d 
+	@${RM} ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/CUU_M68_4bit_ported.c  -o ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+else
 ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o: CUU/Noritake_VFD_CUU.c  .generated_files/flags/default/28d280c4ab085575f479b7522dad8ddc4f03132d .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}/CUU" 
 	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o.d 
 	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/Noritake_VFD_CUU.c  -o ${OBJECTDIR}/CUU/Noritake_VFD_CUU.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/Noritake_VFD_CUU.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o: CUU/CUU_M86_4bit_ported.c  .generated_files/flags/default/47aebd42d25b5c281b46f5b1d5bb21fdb1d7c30e .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
-	@${MKDIR} "${OBJECTDIR}/CUU" 
-	@${RM} ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o.d 
-	@${RM} ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/CUU_M86_4bit_ported.c  -o ${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/CUU_M86_4bit_ported.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
-	
 ${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/default/3735b2cb5aba5f86ee66cbbdfd2e5c8625e2a371 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/Final_Project_main.o.d 
 	@${RM} ${OBJECTDIR}/Final_Project_main.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  Final_Project_main.c  -o ${OBJECTDIR}/Final_Project_main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Final_Project_main.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/CUU/Fake_Arduino.o: CUU/Fake_Arduino.c  .generated_files/flags/default/37813bf955dc848d392ac2addfd96ed1a7d47327 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}/CUU" 
+	@${RM} ${OBJECTDIR}/CUU/Fake_Arduino.o.d 
+	@${RM} ${OBJECTDIR}/CUU/Fake_Arduino.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/Fake_Arduino.c  -o ${OBJECTDIR}/CUU/Fake_Arduino.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/Fake_Arduino.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o: CUU/Noritake_VFD_CUU_1.c  .generated_files/flags/default/3309ac4ca42049e6875dfc85968d11e3bcfa8b8d .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}/CUU" 
+	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o.d 
+	@${RM} ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/Noritake_VFD_CUU_1.c  -o ${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/Noritake_VFD_CUU_1.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o: CUU/CUU_M68_4bit_ported.c  .generated_files/flags/default/d348a99cbb5bd1cea8d24885844a9f7e02aae156 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}/CUU" 
+	@${RM} ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o.d 
+	@${RM} ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU/CUU_M68_4bit_ported.c  -o ${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU/CUU_M68_4bit_ported.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
 endif
 

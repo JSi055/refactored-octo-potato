@@ -42,7 +42,6 @@ int main(void) {
         LATBbits.LATB7 = 0;
         LATBbits.LATB8 = 1;
         LATBbits.LATB8 = 0;
-        
     }
 }
 

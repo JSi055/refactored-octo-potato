@@ -30,9 +30,13 @@
         <itemPath>CUU/Noritake_VFD_CUU.h</itemPath>
         <itemPath>CUU/Noritake_VFD_CUU.c</itemPath>
       </logicalFolder>
-      <itemPath>analizer_main_v001.c</itemPath>
-      <itemPath>CUU/CUU_M86_4bit_ported.c</itemPath>
       <itemPath>Final_Project_main.c</itemPath>
+      <itemPath>CUU/Fake_Arduino.h</itemPath>
+      <itemPath>CUU/Fake_Arduino.c</itemPath>
+      <itemPath>CUU/Noritake_VFD_CUU_1.h</itemPath>
+      <itemPath>CUU/Noritake_VFD_CUU_1.c</itemPath>
+      <itemPath>CUU/CUU_M68_4bit_ported.h</itemPath>
+      <itemPath>CUU/CUU_M68_4bit_ported.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
