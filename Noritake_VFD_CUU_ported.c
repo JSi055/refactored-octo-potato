@@ -3,6 +3,7 @@
 
 #include "CUU_M68_4bit_ported.h"
 #include "Noritake_VFD_CUU_ported.h"
+#include "lonne025_delays_v002.h"
 //#include <util/delay.h>
 
 #define MIN_DELAY 5
@@ -11,8 +12,8 @@
     void cu20045_uw4j(Noritake_VFD_CUU* this) {  this->is_cu20045_uw4j = true; };
     
     void bcVFD(Noritake_VFD_CUU* this) { this->bc_vfd = true; }
-    void japaneseFont(Noritake_VFD_CUU* this) { this->bc_font = true; CUU_home(); }
-    void europeanFont(Noritake_VFD_CUU* this) { this->bc_font = false; CUU_home(); }
+    void japaneseFont(Noritake_VFD_CUU* this) { this->bc_font = true; CUU_home(this); }
+    void europeanFont(Noritake_VFD_CUU* this) { this->bc_font = false; CUU_home(this); }
 
 void begin(Noritake_VFD_CUU* this, int cols, int lines) {
     this->cols = cols;
@@ -20,19 +21,19 @@ void begin(Noritake_VFD_CUU* this, int cols, int lines) {
 }
 
 void interface(Noritake_VFD_CUU* this, CUU_Interface* interface) {
-    this->io = &interface;
+    this->io = interface;
 }
 
 // ----------------------------------------------------------------
 // Initialize the VFD module. This must be called before any other
 // methods.
 int
-CUU_init() {
-    io->init();
-    CUU_brightness(100);
-	CUU_displayOn();
-	CUU_leftToRight();
-	CUU_clearScreen();
+CUU_init(Noritake_VFD_CUU* this) {
+    this->io->init(this->io);
+    CUU_brightness(this, 100);
+	CUU_displayOn(this);
+	CUU_leftToRight(this);
+	CUU_clearScreen(this);
 	return 0;
 }
 
@@ -41,8 +42,8 @@ CUU_init() {
 //Send command to the VFD controller.
 //data: command to send
 void
-CUU_command(uint8_t data) {
-	io->write(data, false);
+CUU_command(Noritake_VFD_CUU* this, uint8_t data) {
+	this->io->write(this->io, data, false);
 	_delay_us(MIN_DELAY);
 }
 
@@ -51,8 +52,8 @@ CUU_command(uint8_t data) {
 //Write data to the VFD controller.
 //data: byte to send
 void
-CUU_writeData(uint8_t data) {
-	io->write(data, true);
+CUU_writeData(Noritake_VFD_CUU* this, uint8_t data) {
+	this->io->write(this->io, data, true);
 	_delay_us(MIN_DELAY);
 }
 
@@ -60,8 +61,8 @@ CUU_writeData(uint8_t data) {
 //uint8_t CUU_readData();
 //Read command from the VFD controller.
 uint8_t
-CUU_readCommand() {
-	uint8_t data = io->read(false);
+CUU_readCommand(Noritake_VFD_CUU* this) {
+	uint8_t data = this->io->read(this->io, false);
 	_delay_us(MIN_DELAY);
 	return data;
 }
@@ -72,8 +73,8 @@ CUU_readCommand() {
 //same direction as if a write had occurred. The display does not
 //shift even if autoscroll is enabled.
 uint8_t
-CUU_readData() {
-	uint8_t data = io->read(true);
+CUU_readData(Noritake_VFD_CUU* this) {
+	uint8_t data = this->io->read(this->io, true);
 	_delay_us(MIN_DELAY);
 	return data;
 }
@@ -86,8 +87,8 @@ CUU_readData() {
 //then the DDRAM address will be returned. When a CGRAM address
 //is read bit6 (0x40) will be set.
 uint8_t
-CUU_readAddress() {
-	return CUU_readCommand() & ~0x80;
+CUU_readAddress(Noritake_VFD_CUU* this) {
+	return CUU_readCommand(this) & ~0x80;
 }
 
 //----------------------------------------------------------------
@@ -99,14 +100,14 @@ CUU_readAddress() {
 //in the same direction as if a write had occurred. The display
 // does not shift even if autoscroll is enabled.
 uint8_t
-CUU_readRAM() {
-	return CUU_readData();
+CUU_readRAM(Noritake_VFD_CUU* this) {
+	return CUU_readData(this);
 }
 
 void
-nextLine() {
-	uint8_t x = CUU_readAddress();
-    if (is_cu20045_uw4j) {
+nextLine(Noritake_VFD_CUU* this) {
+	uint8_t x = CUU_readAddress(this);
+    if (this->is_cu20045_uw4j) {
     	if (x < 0x20)
     		x = 0x20;
     	else if (x<0x40)
@@ -115,17 +116,17 @@ nextLine() {
     		x = 0x60;
     	else if (x<0x80)
     		x = 0x00;
-    	CUU_setCursor(x);
+    	CUU_setCursor(this, x);
     } else {
 		if (x < 0x14) // line 0
 			x = 0x40;
-		else if (lines > 2 && 0x40<=x && x<0x54) // line 1
+		else if (this->lines > 2 && 0x40<=x && x<0x54) // line 1
 			x = 0x14;
-		else if (lines > 3 && 0x14<=x && x<=0x28) // line 2
+		else if (this->lines > 3 && 0x14<=x && x<=0x28) // line 2
 			x = 0x54;
 		else
 			x = 0x00;
-		CUU_setCursor(x);
+		CUU_setCursor(this, x);
     }
 	_delay_us(MIN_DELAY);
 }
@@ -135,8 +136,8 @@ nextLine() {
 //The effects of printing past the end of the line depends on the model.
 //data:	character to print
 void
-print(char data) {
-	CUU_writeData(data);
+print_char(Noritake_VFD_CUU* this, char data) {
+	CUU_writeData(this, data);
 }
 
 //----------------------------------------------------------------
@@ -144,9 +145,9 @@ print(char data) {
 //The effects of printing past the end of the line depends on the model.
 //str: a null-terminated string
 void
-print(const char *str) {
+print_str(Noritake_VFD_CUU* this, const char *str) {
 	while (*str)
-		print(*str++);
+		print_char(this, *str++);
 }
 
 //----------------------------------------------------------------
@@ -155,9 +156,9 @@ print(const char *str) {
 //buffer:	characters to print
 //size:	number of characters to print
 void
-print(const uint8_t *buffer, size_t size) {
+print_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
 	while (size--)
-		print((char) *buffer++);
+		print_char(this, (char) *buffer++);
 }
 
 // ----------------------------------------------------------------
@@ -166,9 +167,9 @@ print(const uint8_t *buffer, size_t size) {
 //The effects of printing past the end of the line depends on the model.
 //data:	character to print
 void
-println(char data) {
-	print(data);
-	nextLine();
+println_char(Noritake_VFD_CUU* this, char data) {
+	print_char(this, data);
+	nextLine(this);
 }
 
 // ----------------------------------------------------------------
@@ -177,9 +178,9 @@ println(char data) {
 //The effects of printing past the end of the line depends on the model.
 //str: a null-terminated string
 void
-println(const char *str) {
-	print(str);
-	nextLine();
+println_str(Noritake_VFD_CUU* this, const char *str) {
+	print_str(this, str);
+	nextLine(this);
 }
 
 // ----------------------------------------------------------------
@@ -189,23 +190,23 @@ println(const char *str) {
 //buffer:	characters to print
 //size:	number of characters to print
 void
-println(const uint8_t *buffer, size_t size) {
-	print(buffer, size);
-	nextLine();
+println_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
+	print_buf(this, buffer, size);
+	nextLine(this);
 }
 
 void
-printNumber(unsigned long number, int base) {
-	if (number/base)
-		printNumber(number/base, base);
-	print("0123456789ABCDEF"[number%base]);
+printNumber_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
+	if (number/base_)
+		printNumber_ulong(this, number/base_, base_);
+	print_char(this, "0123456789ABCDEF"[number%base_]);
 }
 
 void
-printNumber(long number, int base) {
-	if (number/base)
-		printNumber(number/base, base);
-	print("0123456789ABCDEF"[number%base]);
+printNumber_long(Noritake_VFD_CUU* this, long number, int base_) {
+	if (number/base_)
+		printNumber_long(this, number/base_, base_);
+	print_char(this, "0123456789ABCDEF"[number%base_]);
 }
 
 //----------------------------------------------------------------
@@ -213,13 +214,13 @@ printNumber(long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print(int number, int base) {
+print_int(Noritake_VFD_CUU* this, int number, int base_) {
 	if (number < 0) {
-		print('-');
+		print_char(this, '-');
 		number = -number;
-		printNumber((long)number, base);
+		printNumber_long(this, (long)number, base_);
 	} else
-		printNumber((long)number, base);
+		printNumber_long(this, (long)number, base_);
 }
 
 //----------------------------------------------------------------
@@ -227,8 +228,8 @@ print(int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print(unsigned int number, int base) {
-	printNumber((unsigned long)number, base);
+print_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
+	printNumber_ulong(this, (unsigned long)number, base_);
 }
 
 //----------------------------------------------------------------
@@ -236,13 +237,13 @@ print(unsigned int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print(long number, int base) {
+print_long(Noritake_VFD_CUU* this, long number, int base_) {
 	if (number < 0) {
-		print('-');
+		print_char(this, '-');
 		number = -number;
-		printNumber((long)number, base);
+		printNumber_long(this, (long)number, base_);
 	} else
-		printNumber((long)number, base);
+		printNumber_long(this, (long)number, base_);
 }
 
 //----------------------------------------------------------------
@@ -250,8 +251,8 @@ print(long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print(unsigned long number, int base) {
-	printNumber(number, base);
+print_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
+	printNumber_ulong(this, number, base_);
 }
 
 // ----------------------------------------------------------------
@@ -261,9 +262,9 @@ print(unsigned long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println(int number, int base) {
-	print((long)number, base);
-	nextLine();
+println_int(Noritake_VFD_CUU* this, int number, int base_) {
+	print_long(this, (long)number, base_);
+	nextLine(this);
 }
 
 //----------------------------------------------------------------
@@ -273,9 +274,9 @@ println(int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println(unsigned int number, int base) {
-	print((unsigned long)number, base);
-	nextLine();
+println_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
+	print_long(this, (unsigned long)number, base_);
+	nextLine(this);
 }
 
 //----------------------------------------------------------------
@@ -285,9 +286,9 @@ println(unsigned int number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println(long number, int base) {
-	print(number, base);
-	nextLine();
+println_long(Noritake_VFD_CUU* this, long number, int base_) {
+	print_long(this, number, base_);
+	nextLine(this);
 }
 
 //----------------------------------------------------------------
@@ -297,9 +298,9 @@ println(long number, int base) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println(unsigned long number, int base) {
-	print(number, base);
-	nextLine();
+println_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
+	print_ulong(this, number, base_);
+	nextLine(this);
 }
 
 // ----------------------------------------------------------------
@@ -307,17 +308,17 @@ println(unsigned long number, int base) {
 // cursor home. Reset display shift to no shift. Set the entry mode to
 // left-to-right.
 void
-CUU_clearScreen() {
-	CUU_command(0x01);
-	_delay_ms(5);
+CUU_clearScreen(Noritake_VFD_CUU* this) {
+	CUU_command(this, 0x01);
+	waitMS(5);
 }
 
 // ----------------------------------------------------------------
 // Moves the cursor back to the home position (top-left). Display
 // shift is reset to no shift.
 void
-CUU_home() {
-	CUU_command(0x02 + bc_font);
+CUU_home(Noritake_VFD_CUU* this) {
+	CUU_command(this, 0x02 + this->bc_font);
 	_delay_us(MIN_DELAY);
 }
 
@@ -338,8 +339,8 @@ CUU_home() {
 //	2                       0x14 - 0x27     0x40 - 0x53
 //	3                       0x54 - 0x67     0x60 - 0x73
 void
-CUU_setCursor(uint8_t pos) {
-	CUU_command(0x80|pos);
+CUU_setCursor(Noritake_VFD_CUU* this, uint8_t pos) {
+	CUU_command(this, 0x80|pos);
 	_delay_us(500);
 }
 
@@ -349,62 +350,62 @@ CUU_setCursor(uint8_t pos) {
 //col: column to move to
 //line: line to move to
 void
-CUU_setCursor_2d(uint8_t col, uint8_t line) {
-	if (col < cols && line < lines) {
-        if (is_cu20045_uw4j)
+CUU_setCursor_2d(Noritake_VFD_CUU* this, uint8_t col, uint8_t line) {
+	if (col < this->cols && line < this->lines) {
+        if (this->is_cu20045_uw4j)
     		switch (line) {
     		case 0:
-    			CUU_setCursor(0x00 + col);
+    			CUU_setCursor(this, 0x00 + col);
     			break;
     		case 1:
-    			CUU_setCursor(0x20 + col);
+    			CUU_setCursor(this, 0x20 + col);
     			break;
     		case 2:
-    			CUU_setCursor(0x40 + col);
+    			CUU_setCursor(this, 0x40 + col);
     			break;
     		case 3:
-    			CUU_setCursor(0x60 + col);
+    			CUU_setCursor(this, 0x60 + col);
     			break;
     		}
         else
     		switch (line) {
     		case 0:
-    			CUU_setCursor(0x00 + col);
+    			CUU_setCursor(this, 0x00 + col);
     			break;
     		case 1:
-    			CUU_setCursor(0x40 + col);
+    			CUU_setCursor(this, 0x40 + col);
     			break;
     		case 2:
-    			CUU_setCursor(0x14 + col);
+    			CUU_setCursor(this, 0x14 + col);
     			break;
     		case 3:
-    			CUU_setCursor(0x54 + col);
+    			CUU_setCursor(this, 0x54 + col);
     			break;
     		}
 	}
 }
 
 void
-setDisplay() {
-	CUU_command(8+display*4+cursor*2+blink);
+setDisplay(Noritake_VFD_CUU* this) {
+	CUU_command(this, 8 + this->display * 4 + this->cursor * 2 + this->blink);
 	_delay_us(MIN_DELAY);
 }
 
 // ----------------------------------------------------------------
 // Turn the display on.
 void
-CUU_displayOn() {
-	display = true;
-	setDisplay();
+CUU_displayOn(Noritake_VFD_CUU* this) {
+	this->display = true;
+	setDisplay(this);
 }
 
 // ----------------------------------------------------------------
 // Turn the display off. This sends the module into a low power
 // consumption mode. See the manual for your module for details.
 void
-CUU_displayOff() {
-	display = false;
-	setDisplay();
+CUU_displayOff(Noritake_VFD_CUU* this) {
+	this->display = false;
+	setDisplay(this);
 }
 
 //----------------------------------------------------------------
@@ -412,33 +413,33 @@ CUU_displayOff() {
 //on the following models: CU20045-UW4J, CU20045-UW5J, CU20045-UW5A,
 //CU20045-UW7J, CU20049-UW2J, CU20049-UW2A
 void
-CUU_cursorOn() {
-	cursor = true;
-	setDisplay();
+CUU_cursorOn(Noritake_VFD_CUU* this) {
+	this->cursor = true;
+	setDisplay(this);
 }
 
 // ----------------------------------------------------------------
 // Turn the underline cursor off.
 void
-CUU_cursorOff() {
-	cursor = false;
-	setDisplay();
+CUU_cursorOff(Noritake_VFD_CUU* this) {
+	this->cursor = false;
+	setDisplay(this);
 }
 
 // ----------------------------------------------------------------
 // Enable the full-cell block (blinking) cursor.
 void
-CUU_blinkOn() {
-	blink = true;
-	setDisplay();
+CUU_blinkOn(Noritake_VFD_CUU* this) {
+	this->blink = true;
+	setDisplay(this);
 }
 
 // ----------------------------------------------------------------
 // Disable the full-cell block (blinking) cursor.
 void
-CUU_blinkOff() {
-	blink = false;
-	setDisplay();
+CUU_blinkOff(Noritake_VFD_CUU* this) {
+	this->blink = false;
+	setDisplay(this);
 }
 
 // ----------------------------------------------------------------
@@ -446,8 +447,8 @@ CUU_blinkOff() {
 // character will no longer be displayed and the previous rightmost
 // character will now be the second from the right.
 void
-CUU_scrollDisplayLeft() {
-	CUU_command(0x18);
+CUU_scrollDisplayLeft(Noritake_VFD_CUU* this) {
+	CUU_command(this, 0x18);
 	_delay_us(MIN_DELAY);
 }
 
@@ -456,14 +457,14 @@ CUU_scrollDisplayLeft() {
 // character will no longer be displayed and the previous leftmost
 // character will now be the second.
 void
-CUU_scrollDisplayRight() {
-	CUU_command(0x1c);
+CUU_scrollDisplayRight(Noritake_VFD_CUU* this) {
+	CUU_command(this, 0x1c);
 	_delay_us(MIN_DELAY);
 }
 
 void
-setDirection() {
-	CUU_command(4+2*(!rightToLeft)+autoscroll);
+setDirection(Noritake_VFD_CUU* this) {
+	CUU_command(this, 4 + 2 * (!this->rightToLeft) + this->autoscroll);
 	_delay_us(MIN_DELAY);
 }
 
@@ -471,35 +472,35 @@ setDirection() {
 // Set the entry mode to move the cursor to the right after a
 // character has been inserted.
 void
-CUU_leftToRight() {
-	rightToLeft = false;
-	setDirection();
+CUU_leftToRight(Noritake_VFD_CUU* this) {
+	this->rightToLeft = false;
+	setDirection(this);
 }
 
 // ----------------------------------------------------------------
 // Set the entry mode to move the cursor to the left after a
 // character has been inserted.
 void
-CUU_rightToLeft() {
-	rightToLeft = true;
-	setDirection();
+CUU_rightToLeft(Noritake_VFD_CUU* this) {
+	this->rightToLeft = true;
+	setDirection(this);
 }
 
 // ----------------------------------------------------------------
 // Automatically scroll the display whenever a character is printed.
 void
-CUU_autoscroll() {
-	autoscroll = true;
-	setDirection();
+CUU_autoscroll(Noritake_VFD_CUU* this) {
+	this->autoscroll = true;
+	setDirection(this);
 }
 
 // ----------------------------------------------------------------
 // Do not automatically scroll the display whenever a character is
 // printed.
 void
-CUU_noAutoscroll() {
-	autoscroll = false;
-	setDirection();
+CUU_noAutoscroll(Noritake_VFD_CUU* this) {
+	this->autoscroll = false;
+	setDirection(this);
 }
 
 // ----------------------------------------------------------------
@@ -516,22 +517,22 @@ CUU_noAutoscroll() {
 //	CU20045-UW4J, CU20045-UW5J, CU20045-UW5A,
 //	CU20045-UW7J, CU20049-UW2J, CU20049-UW2A
 void
-CUU_createChar(uint8_t num, uint8_t *bits) {
+CUU_createChar(Noritake_VFD_CUU* this, uint8_t num, uint8_t *bits) {
 	if (num >= 8)
 		return;
-	uint8_t	addr = CUU_readAddress();
-	bool oldDir = rightToLeft;
+	uint8_t	addr = CUU_readAddress(this);
+	uint8_t oldDir = this->rightToLeft;
 	
-	if (rightToLeft)
-		CUU_leftToRight();
+	if (this->rightToLeft)
+		CUU_leftToRight(this);
 	
-	CUU_command(0x40+num*8);	// set CGRAM address
+	CUU_command(this, 0x40 + num * 8);	// set CGRAM address
 	for (uint8_t i=0; i<8; i++)
-		CUU_writeData(bits[i]);
+		CUU_writeData(this, bits[i]);
 	
 	if (oldDir)
-		CUU_rightToLeft();
-	CUU_command(0x80|addr);	// restore DDRAM address
+		CUU_rightToLeft(this);
+	CUU_command(this, 0x80|addr);	// restore DDRAM address
 	_delay_us(MIN_DELAY);
 }
 
@@ -547,23 +548,23 @@ CUU_createChar(uint8_t num, uint8_t *bits) {
 //	The fifth bit of the eighth byte sets the whole row if set.
 //	Other bits in the eighth byte are ignored.
 void
-CUU_readChar(uint8_t *data, uint8_t num) {
+CUU_readChar(Noritake_VFD_CUU* this, uint8_t *data, uint8_t num) {
 	if (num >= 8)
 		return;
 		
-	uint8_t	addr = CUU_readAddress();
-	bool oldDir = rightToLeft;
+	uint8_t	addr = CUU_readAddress(this);
+	uint8_t oldDir = this->rightToLeft;
 	
-	if (rightToLeft)
-		CUU_leftToRight();
+	if (this->rightToLeft)
+		CUU_leftToRight(this);
 
-	CUU_command(0x40+num*8);	// set CGRAM address
+	CUU_command(this, 0x40 + num * 8);	// set CGRAM address
 	for (uint8_t i = 0; i < 8; i++)
-		data[i] = CUU_readData();	
+		data[i] = CUU_readData(this);	
 
 	if (oldDir)
-		CUU_rightToLeft();
-	CUU_command(0x80|addr);	// restore DDRAM address
+		CUU_rightToLeft(this);
+	CUU_command(this, 0x80|addr);	// restore DDRAM address
 	_delay_us(MIN_DELAY);
 }
 
@@ -571,8 +572,8 @@ CUU_readChar(uint8_t *data, uint8_t num) {
 // uint8_t CUU_readBusy();
 //Return the busy flag. 1 indicates the device is busy.
 uint8_t
-CUU_readBusy() {
-	return (CUU_readCommand() & 0x80) != 0;
+CUU_readBusy(Noritake_VFD_CUU* this) {
+	return (CUU_readCommand(this) & 0x80) != 0;
 }
 
 // ----------------------------------------------------------------
@@ -585,17 +586,18 @@ CUU_readBusy() {
 //		CU16025-UX6A
 //		CU20025-UX1J
 void
-CUU_brightness(int brightness) {
-    if (bc_vfd) {
+CUU_brightness(Noritake_VFD_CUU* this, int brightness) {
+    if (this->bc_vfd) {
         if (brightness <= 0 || brightness > 100) return;
-        CUU_command(0x30 + (10000-brightness*100)/625);
+        CUU_command(this, 0x30 + (10000 - brightness*100) / 625);
     	_delay_us(MIN_DELAY);
     } else {
-        const register int m = hasBrightnessBoost? 2: 1;
+        const register int m = this->hasBrightnessBoost? 2 : 1;
         if (brightness <= 0 || brightness > 100 * m) return;
-        CUU_command(io->is8bit()? 0x30: 0x20);
+        // brightness byte is sent after Function Set
+        CUU_command(this, /*this->io->is8bit() ? 0x30 : */ 0x20);
     	_delay_us(MIN_DELAY);
-    	CUU_writeData((100 * m - brightness) / (25 * m));
+    	CUU_writeData(this, (100 * m - brightness) / (25 * m));
     	_delay_us(MIN_DELAY);
     }
 }

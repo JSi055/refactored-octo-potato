@@ -17,8 +17,10 @@ extern "C" {
 
 //typedef struct CUU_Interface_struct CUU_Interface;
 typedef struct CUU_Interface_struct {
+    void (*init)(struct CUU_Interface_struct*);
     void (*write)(struct CUU_Interface_struct*, uint8_t, char);
     uint8_t (*read)(struct CUU_Interface_struct*, char);
+    
     uint8_t RS_PIN;
     uint8_t RW_PIN;
     uint8_t E_PIN;
@@ -27,6 +29,8 @@ typedef struct CUU_Interface_struct {
     uint8_t D6_PIN;
     uint8_t D7_PIN;
 } CUU_Interface;
+
+void CUU_M68_4_create(CUU_Interface *inter);
 
 //public:
 void CUU_M68_4_init(CUU_Interface *inter);

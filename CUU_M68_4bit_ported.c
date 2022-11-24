@@ -9,9 +9,13 @@
 #define CHECK(X)	digitalRead(inter->X##_PIN)
 #define SETPIN(X,V) digitalWrite(inter->X##_PIN, (V)? HIGH: LOW)
 
-void CUU_M68_4_init(CUU_Interface *inter) {
+void CUU_M68_4_create(CUU_Interface *inter) {
+    inter->init = CUU_M68_4_init;
     inter->write = CUU_M68_4_write;
     inter->read = CUU_M68_4_read;
+}
+
+void CUU_M68_4_init(CUU_Interface *inter) {
     RAISE(RW);
         
     DIRECTION(RS, 1);
