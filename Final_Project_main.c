@@ -1,15 +1,19 @@
 /*
  * File:   Final_Project_main.c
- * Author: Jake's pc
+ * Author: Thomas Lonneman and Jacob Simons
  *
  * Created on November 22, 2022, 11:57 AM
  */
 
 
 #include <p24FJ64GA002.h>
+#include "xc.h"
+
 //#include "Final_Project_AsmLib.h"
 
-#include "xc.h"
+#include "Noritake_VFD_CUU_ported.h"
+
+#include "running_average.h"
 
 #pragma config ICS = PGx1          // Comm Channel Select (Emulator EMUC1/EMUD1 pins are shared with PGC1/PGD1)
 #pragma config FWDTEN = OFF        // Watchdog Timer Enable (Watchdog Timer is disabled)
@@ -27,46 +31,68 @@
 #pragma config FNOSC = FRCPLL      // Oscillator Select (Fast RC Oscillator with PLL module (FRCPLL))
 
 
-void input_Setup(void);
-void test_Output(void);
-void UART_Setup(void);
-//to do  display function
+#define BAT_VOLTAGE_PIN 9 // AN9
 
-int main(void) {
-    test_Output();
-    input_Setup();
-    while(1){
-        LATBbits.LATB6 = 1;
-        LATBbits.LATB6 = 0;
-        LATBbits.LATB7 = 1;
-        LATBbits.LATB7 = 0;
-        LATBbits.LATB8 = 1;
-        LATBbits.LATB8 = 0;
-    }
-}
+// Keeps a running average of the battery voltage. Maybe we can squeeze another
+// 2 bits of precision by averaging some noise.
+// TODO: we might need just the right amount of noise.
+volatile average_moving_exponential vbat_avg;
 
-void input_Setup(void){
-    AD1PCFG = 0xFDFF;
-    AD1CON1 = 0x00E4; //SSRC = 111, ASAM = 1, 
-    AD1CON2 = 0x0;    
-    AD1CON3 = 0x1F01; //ADCS = 1, SAMC = 111
-    AD1CHS = 0x0009;  //CH0SA = 9
-//    IFS0bits.AD1IF = 0; //optional interrupt
-//    IEC0bits.AD1IE = 1;
-    AD1CON1bits.ADON = 1;
-}
+Noritake_VFD_CUU screen;
 
-void test_Output(void){
-    TRISBbits.TRISB6 = 0;  //set outputs
-    TRISBbits.TRISB7 = 0;
-    TRISBbits.TRISB8 = 0;
-    LATBbits.LATB6 = 0;
-    LATBbits.LATB7 = 0;
-    LATBbits.LATB8 = 0;
-}
-
-void UART_Setup(void){
-    __builtin_write_OSCCONL(OSCCON & 0xBF);
+void setup() {
+ 
+    // Make all pins digital accept for the battery voltage sensing pin
+    AD1PCFG = 0x9FFF & ~(1 << BAT_VOLTAGE_PIN);    
+    
+    // ================ Digital Pins ================
+    //                  (Test Loads)
+    
+    //LATBbits.LATB6 = 0; //
+    //LATBbits.LATB7 = 0; // default
+    //LATBbits.LATB8 = 0; //
+    
+    TRISBbits.TRISB6 = 0; // Set RB6, RB7, and RB8 as Outputs
+    TRISBbits.TRISB7 = 0; //
+    TRISBbits.TRISB8 = 0; //
+    // ============== end Digital Pins ==============
+    
+    
+    // ================ Setup ADC ================
+    //           (Battery Voltage Sensing)
+    // TODO: Current Sensing
+    AD1CON1 = 0;
+    AD1CON1bits.SSRC = 0b111;    // Internal counter (auto-convert)
+    AD1CON1bits.ASAM = 1;        // Turn on auto-sample after conversion.
+    // AD1CON1bits.FORM = 0b00;  // integer format (0 - 1023)
+    
+    AD1CON2bits.CSCNA = 1; // Turn on channel scanning (ignore CH0SA)
+    AD1CSSL = 1 << BAT_VOLTAGE_PIN; // cycle through AN0 through AN4
+    //AD1CHSbits.CH0NA = BAT_VOLTAGE_PIN;
+    
+    AD1CON2bits.SMPI = (1-1); // interrupt after 1 conversion cycle(s)
+    AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
+    
+    // sample and convert cycles = (12 + SAMC) * ADCS = (12 + 10) * 2 = 44
+    AD1CON3bits.ADCS = (2-1); // 2 x Tcy = 125ns
+    // If our resistor network is 10k Ohm, and the cap is 4.4pF, the RC
+    // time constant is 0.704 cycles.
+    // e^-(0.704*t) = 1024, t = 9.85 cycles. Lets double that for safety.
+    AD1CON3bits.SAMC = 10;
+    
+    _AD1IF = 0; // clear IF flag
+    _AD1IP = 4; // set priority 4 (default) TODO: compare to other interrupts
+    _AD1IE = 1; // enable interrupts 
+    
+    AD1CON1bits.ADON = 1; // start the analog to digital converter
+    // ============== end Setup ADC ==============
+    
+    
+    // ================ Setup UART ================
+    // (115200 baud TTL to send data, and get commands from a PC)
+    // TODO: pick the pins!
+    
+        __builtin_write_OSCCONL(OSCCON & 0xBF);
     //RPINR18bits.U1RXR =
     //RPINR18bits.U1CTSR =
     //RPOR bits.RP R = 3;
@@ -79,5 +105,26 @@ void UART_Setup(void){
 //    IEC0bits.U1RXIE = 1;
     U1MODEbits.UARTEN = 1;
     U1STA = 0x400;  //UXTEN = 1; 
+    // ============== end Setup UART ==============
+    
+    
+    // ================ Setup VFD Screen ================
+    //  (Initialize the Noritake itron CU16025ECPB-U5J
+    //   VFD display. Note: this setup uses delays)
+    
+    
+    
+    // ============== end Setup VFD Screen ==============
 }
 
+int main() {
+    setup();
+    while(1){
+        LATBbits.LATB6 = 1;
+        LATBbits.LATB6 = 0;
+        LATBbits.LATB7 = 1;
+        LATBbits.LATB7 = 0;
+        LATBbits.LATB8 = 1;
+        LATBbits.LATB8 = 0;
+    }
+}

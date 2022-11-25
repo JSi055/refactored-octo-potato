@@ -8,19 +8,19 @@
 
 #define MIN_DELAY 5
 
-    void brightnessBoost(Noritake_VFD_CUU* this) { this->hasBrightnessBoost = true; }
-    void cu20045_uw4j(Noritake_VFD_CUU* this) {  this->is_cu20045_uw4j = true; };
+    void CUU_brightnessBoost(Noritake_VFD_CUU* this) { this->hasBrightnessBoost = true; }
+    void CUU_cu20045_uw4j(Noritake_VFD_CUU* this) {  this->is_cu20045_uw4j = true; };
     
-    void bcVFD(Noritake_VFD_CUU* this) { this->bc_vfd = true; }
-    void japaneseFont(Noritake_VFD_CUU* this) { this->bc_font = true; CUU_home(this); }
-    void europeanFont(Noritake_VFD_CUU* this) { this->bc_font = false; CUU_home(this); }
+    void CUU_bcVFD(Noritake_VFD_CUU* this) { this->bc_vfd = true; }
+    void CUU_japaneseFont(Noritake_VFD_CUU* this) { this->bc_font = true; CUU_home(this); }
+    void CUU_europeanFont(Noritake_VFD_CUU* this) { this->bc_font = false; CUU_home(this); }
 
-void begin(Noritake_VFD_CUU* this, int cols, int lines) {
+void CUU_begin(Noritake_VFD_CUU* this, int cols, int lines) {
     this->cols = cols;
     this->lines = lines;
 }
 
-void interface(Noritake_VFD_CUU* this, CUU_Interface* interface) {
+void CUU_interface(Noritake_VFD_CUU* this, CUU_Interface* interface) {
     this->io = interface;
 }
 
@@ -105,7 +105,7 @@ CUU_readRAM(Noritake_VFD_CUU* this) {
 }
 
 void
-nextLine(Noritake_VFD_CUU* this) {
+CUU_nextLine(Noritake_VFD_CUU* this) {
 	uint8_t x = CUU_readAddress(this);
     if (this->is_cu20045_uw4j) {
     	if (x < 0x20)
@@ -136,7 +136,7 @@ nextLine(Noritake_VFD_CUU* this) {
 //The effects of printing past the end of the line depends on the model.
 //data:	character to print
 void
-print_char(Noritake_VFD_CUU* this, char data) {
+CUU_print_char(Noritake_VFD_CUU* this, char data) {
 	CUU_writeData(this, data);
 }
 
@@ -145,9 +145,9 @@ print_char(Noritake_VFD_CUU* this, char data) {
 //The effects of printing past the end of the line depends on the model.
 //str: a null-terminated string
 void
-print_str(Noritake_VFD_CUU* this, const char *str) {
+CUU_print_str(Noritake_VFD_CUU* this, const char *str) {
 	while (*str)
-		print_char(this, *str++);
+		CUU_print_char(this, *str++);
 }
 
 //----------------------------------------------------------------
@@ -156,9 +156,9 @@ print_str(Noritake_VFD_CUU* this, const char *str) {
 //buffer:	characters to print
 //size:	number of characters to print
 void
-print_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
+CUU_print_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
 	while (size--)
-		print_char(this, (char) *buffer++);
+		CUU_print_char(this, (char) *buffer++);
 }
 
 // ----------------------------------------------------------------
@@ -167,9 +167,9 @@ print_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
 //The effects of printing past the end of the line depends on the model.
 //data:	character to print
 void
-println_char(Noritake_VFD_CUU* this, char data) {
-	print_char(this, data);
-	nextLine(this);
+CUU_println_char(Noritake_VFD_CUU* this, char data) {
+	CUU_print_char(this, data);
+	CUU_nextLine(this);
 }
 
 // ----------------------------------------------------------------
@@ -178,9 +178,9 @@ println_char(Noritake_VFD_CUU* this, char data) {
 //The effects of printing past the end of the line depends on the model.
 //str: a null-terminated string
 void
-println_str(Noritake_VFD_CUU* this, const char *str) {
-	print_str(this, str);
-	nextLine(this);
+CUU_println_str(Noritake_VFD_CUU* this, const char *str) {
+	CUU_print_str(this, str);
+	CUU_nextLine(this);
 }
 
 // ----------------------------------------------------------------
@@ -190,23 +190,23 @@ println_str(Noritake_VFD_CUU* this, const char *str) {
 //buffer:	characters to print
 //size:	number of characters to print
 void
-println_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
-	print_buf(this, buffer, size);
-	nextLine(this);
+CUU_println_buf(Noritake_VFD_CUU* this, const uint8_t *buffer, size_t size) {
+	CUU_print_buf(this, buffer, size);
+	CUU_nextLine(this);
 }
 
 void
-printNumber_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
+CUU_printNumber_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
 	if (number/base_)
-		printNumber_ulong(this, number/base_, base_);
-	print_char(this, "0123456789ABCDEF"[number%base_]);
+		CUU_printNumber_ulong(this, number/base_, base_);
+	CUU_print_char(this, "0123456789ABCDEF"[number%base_]);
 }
 
 void
-printNumber_long(Noritake_VFD_CUU* this, long number, int base_) {
+CUU_printNumber_long(Noritake_VFD_CUU* this, long number, int base_) {
 	if (number/base_)
-		printNumber_long(this, number/base_, base_);
-	print_char(this, "0123456789ABCDEF"[number%base_]);
+		CUU_printNumber_long(this, number/base_, base_);
+	CUU_print_char(this, "0123456789ABCDEF"[number%base_]);
 }
 
 //----------------------------------------------------------------
@@ -214,13 +214,13 @@ printNumber_long(Noritake_VFD_CUU* this, long number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print_int(Noritake_VFD_CUU* this, int number, int base_) {
+CUU_print_int(Noritake_VFD_CUU* this, int number, int base_) {
 	if (number < 0) {
-		print_char(this, '-');
+		CUU_print_char(this, '-');
 		number = -number;
-		printNumber_long(this, (long)number, base_);
+		CUU_printNumber_long(this, (long)number, base_);
 	} else
-		printNumber_long(this, (long)number, base_);
+		CUU_printNumber_long(this, (long)number, base_);
 }
 
 //----------------------------------------------------------------
@@ -228,8 +228,8 @@ print_int(Noritake_VFD_CUU* this, int number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
-	printNumber_ulong(this, (unsigned long)number, base_);
+CUU_print_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
+	CUU_printNumber_ulong(this, (unsigned long)number, base_);
 }
 
 //----------------------------------------------------------------
@@ -237,13 +237,13 @@ print_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print_long(Noritake_VFD_CUU* this, long number, int base_) {
+CUU_print_long(Noritake_VFD_CUU* this, long number, int base_) {
 	if (number < 0) {
-		print_char(this, '-');
+		CUU_print_char(this, '-');
 		number = -number;
-		printNumber_long(this, (long)number, base_);
+		CUU_printNumber_long(this, (long)number, base_);
 	} else
-		printNumber_long(this, (long)number, base_);
+		CUU_printNumber_long(this, (long)number, base_);
 }
 
 //----------------------------------------------------------------
@@ -251,8 +251,8 @@ print_long(Noritake_VFD_CUU* this, long number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-print_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
-	printNumber_ulong(this, number, base_);
+CUU_print_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
+	CUU_printNumber_ulong(this, number, base_);
 }
 
 // ----------------------------------------------------------------
@@ -262,9 +262,9 @@ print_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println_int(Noritake_VFD_CUU* this, int number, int base_) {
-	print_long(this, (long)number, base_);
-	nextLine(this);
+CUU_println_int(Noritake_VFD_CUU* this, int number, int base_) {
+	CUU_print_long(this, (long)number, base_);
+	CUU_nextLine(this);
 }
 
 //----------------------------------------------------------------
@@ -274,9 +274,9 @@ println_int(Noritake_VFD_CUU* this, int number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
-	print_long(this, (unsigned long)number, base_);
-	nextLine(this);
+CUU_println_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
+	CUU_print_long(this, (unsigned long)number, base_);
+	CUU_nextLine(this);
 }
 
 //----------------------------------------------------------------
@@ -286,9 +286,9 @@ println_uint(Noritake_VFD_CUU* this, unsigned int number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println_long(Noritake_VFD_CUU* this, long number, int base_) {
-	print_long(this, number, base_);
-	nextLine(this);
+CUU_println_long(Noritake_VFD_CUU* this, long number, int base_) {
+	CUU_print_long(this, number, base_);
+	CUU_nextLine(this);
 }
 
 //----------------------------------------------------------------
@@ -298,9 +298,9 @@ println_long(Noritake_VFD_CUU* this, long number, int base_) {
 //number:	number to print
 //base:	base to print in (2-16)
 void
-println_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
-	print_ulong(this, number, base_);
-	nextLine(this);
+CUU_println_ulong(Noritake_VFD_CUU* this, unsigned long number, int base_) {
+	CUU_print_ulong(this, number, base_);
+	CUU_nextLine(this);
 }
 
 // ----------------------------------------------------------------

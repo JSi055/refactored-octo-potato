@@ -21,6 +21,8 @@
       <itemPath>Fake_Arduino.h</itemPath>
       <itemPath>Noritake_VFD_CUU_ported.c</itemPath>
       <itemPath>Noritake_VFD_CUU_ported.h</itemPath>
+      <itemPath>running_average.h</itemPath>
+      <itemPath>running_average.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
