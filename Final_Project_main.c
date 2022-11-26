@@ -32,6 +32,7 @@
 
 
 #define BAT_VOLTAGE_PIN 9 // AN9
+//test
 
 // Keeps a running average of the battery voltage. Maybe we can squeeze another
 // 2 bits of precision by averaging some noise.
