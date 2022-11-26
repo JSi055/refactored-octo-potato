@@ -118,9 +118,9 @@ void setup() {
     // ============== end Setup VFD Screen ==============
 }
 
-int main() {
+int main() {    //main will need all setup functions, write UARTS, and sending signals 
     setup();
-    while(1){
+    while(1){   
         LATBbits.LATB6 = 1;
         LATBbits.LATB6 = 0;
         LATBbits.LATB7 = 1;
