@@ -95,35 +95,35 @@ MP_LINKER_FILE_OPTION=,--script=p24FJ64GA002.gld
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/default/541a8c44d8f5bfef88bac3ed8a9dffa032869121 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/default/70fe09206207bda9d4f419458fa088aaa692e191 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/Final_Project_main.o.d 
 	@${RM} ${OBJECTDIR}/Final_Project_main.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  Final_Project_main.c  -o ${OBJECTDIR}/Final_Project_main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Final_Project_main.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	${MP_CC} $(MP_EXTRA_CC_PRE)  Final_Project_main.c  -o ${OBJECTDIR}/Final_Project_main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Final_Project_main.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-${OBJECTDIR}/CUU_M68_4bit_ported.o: CUU_M68_4bit_ported.c  .generated_files/flags/default/b782bbce9adf804261023c23dbcf74a119bfe8d0 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+${OBJECTDIR}/CUU_M68_4bit_ported.o: CUU_M68_4bit_ported.c  .generated_files/flags/default/aa1fc06368c7c76fef6bbba705ad31e7eb36896f .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/CUU_M68_4bit_ported.o.d 
 	@${RM} ${OBJECTDIR}/CUU_M68_4bit_ported.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU_M68_4bit_ported.c  -o ${OBJECTDIR}/CUU_M68_4bit_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU_M68_4bit_ported.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	${MP_CC} $(MP_EXTRA_CC_PRE)  CUU_M68_4bit_ported.c  -o ${OBJECTDIR}/CUU_M68_4bit_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CUU_M68_4bit_ported.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-${OBJECTDIR}/Fake_Arduino.o: Fake_Arduino.c  .generated_files/flags/default/8adc46b7120a9137c224dee9e86a6202719d83d9 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+${OBJECTDIR}/Fake_Arduino.o: Fake_Arduino.c  .generated_files/flags/default/198ed1bdef99c9567563f7486e129eb77e6a9906 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/Fake_Arduino.o.d 
 	@${RM} ${OBJECTDIR}/Fake_Arduino.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  Fake_Arduino.c  -o ${OBJECTDIR}/Fake_Arduino.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Fake_Arduino.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	${MP_CC} $(MP_EXTRA_CC_PRE)  Fake_Arduino.c  -o ${OBJECTDIR}/Fake_Arduino.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Fake_Arduino.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-${OBJECTDIR}/Noritake_VFD_CUU_ported.o: Noritake_VFD_CUU_ported.c  .generated_files/flags/default/1b1f724f6ad637871b396f7621cce478b598ea38 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+${OBJECTDIR}/Noritake_VFD_CUU_ported.o: Noritake_VFD_CUU_ported.c  .generated_files/flags/default/4538acbbceab03696f2263ad425f48acc00be76c .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/Noritake_VFD_CUU_ported.o.d 
 	@${RM} ${OBJECTDIR}/Noritake_VFD_CUU_ported.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  Noritake_VFD_CUU_ported.c  -o ${OBJECTDIR}/Noritake_VFD_CUU_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Noritake_VFD_CUU_ported.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	${MP_CC} $(MP_EXTRA_CC_PRE)  Noritake_VFD_CUU_ported.c  -o ${OBJECTDIR}/Noritake_VFD_CUU_ported.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Noritake_VFD_CUU_ported.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-${OBJECTDIR}/running_average.o: running_average.c  .generated_files/flags/default/d7ab18807dafa1fb118965b371b51cbe0c4d0785 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+${OBJECTDIR}/running_average.o: running_average.c  .generated_files/flags/default/2d9bebfa336c5dd95c29c1fea3e3c32003bdc0db .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/running_average.o.d 
 	@${RM} ${OBJECTDIR}/running_average.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  running_average.c  -o ${OBJECTDIR}/running_average.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/running_average.o.d"      -g -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1    -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	${MP_CC} $(MP_EXTRA_CC_PRE)  running_average.c  -o ${OBJECTDIR}/running_average.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/running_average.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
 else
 ${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/default/3735b2cb5aba5f86ee66cbbdfd2e5c8625e2a371 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
@@ -161,11 +161,11 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: assemble
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/lonne025_delays_v002.o: lonne025_delays_v002.s  .generated_files/flags/default/5f2157c6faa3fc2976acaa33b2a0325136f3b9df .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+${OBJECTDIR}/lonne025_delays_v002.o: lonne025_delays_v002.s  .generated_files/flags/default/c2e4786575be7ed731880e35fb00be8111c6a3ef .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/lonne025_delays_v002.o.d 
 	@${RM} ${OBJECTDIR}/lonne025_delays_v002.o 
-	${MP_CC} $(MP_EXTRA_AS_PRE)  lonne025_delays_v002.s  -o ${OBJECTDIR}/lonne025_delays_v002.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -D__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1  -omf=elf -DXPRJ_default=$(CND_CONF)    -Wa,-MD,"${OBJECTDIR}/lonne025_delays_v002.o.d",--defsym=__MPLAB_BUILD=1,--defsym=__MPLAB_DEBUG=1,--defsym=__DEBUG=1,--defsym=__MPLAB_DEBUGGER_SIMULATOR=1,-g,--no-relax$(MP_EXTRA_AS_POST)  -mdfp="${DFP_DIR}/xc16"
+	${MP_CC} $(MP_EXTRA_AS_PRE)  lonne025_delays_v002.s  -o ${OBJECTDIR}/lonne025_delays_v002.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -D__DEBUG   -omf=elf -DXPRJ_default=$(CND_CONF)    -Wa,-MD,"${OBJECTDIR}/lonne025_delays_v002.o.d",--defsym=__MPLAB_BUILD=1,--defsym=__ICD2RAM=1,--defsym=__MPLAB_DEBUG=1,--defsym=__DEBUG=1,,-g,--no-relax$(MP_EXTRA_AS_POST)  -mdfp="${DFP_DIR}/xc16"
 	
 else
 ${OBJECTDIR}/lonne025_delays_v002.o: lonne025_delays_v002.s  .generated_files/flags/default/ce189128568f3cc8142ce8a8ba6517279c44c4b0 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
@@ -187,7 +187,7 @@ endif
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
 ${DISTDIR}/refactored-octo-potato.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk    
 	@${MKDIR} ${DISTDIR} 
-	${MP_CC} $(MP_EXTRA_LD_PRE)  -o ${DISTDIR}/refactored-octo-potato.${IMAGE_TYPE}.${OUTPUT_SUFFIX}  ${OBJECTFILES_QUOTED_IF_SPACED}      -mcpu=$(MP_PROCESSOR_OPTION)        -D__DEBUG=__DEBUG -D__MPLAB_DEBUGGER_SIMULATOR=1  -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)      -Wl,,,--defsym=__MPLAB_BUILD=1,--defsym=__MPLAB_DEBUG=1,--defsym=__DEBUG=1,-D__DEBUG=__DEBUG,--defsym=__MPLAB_DEBUGGER_SIMULATOR=1,$(MP_LINKER_FILE_OPTION),--stack=16,--check-sections,--data-init,--pack-data,--handles,--isr,--no-gc-sections,--fill-upper=0,--stackguard=16,--no-force-link,--smart-io,-Map="${DISTDIR}/${PROJECTNAME}.${IMAGE_TYPE}.map",--report-mem,--memorysummary,${DISTDIR}/memoryfile.xml$(MP_EXTRA_LD_POST)  -mdfp="${DFP_DIR}/xc16" 
+	${MP_CC} $(MP_EXTRA_LD_PRE)  -o ${DISTDIR}/refactored-octo-potato.${IMAGE_TYPE}.${OUTPUT_SUFFIX}  ${OBJECTFILES_QUOTED_IF_SPACED}      -mcpu=$(MP_PROCESSOR_OPTION)        -D__DEBUG=__DEBUG   -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)   -mreserve=data@0x800:0x81F -mreserve=data@0x820:0x821 -mreserve=data@0x822:0x823 -mreserve=data@0x824:0x825 -mreserve=data@0x826:0x84F   -Wl,,,--defsym=__MPLAB_BUILD=1,--defsym=__MPLAB_DEBUG=1,--defsym=__DEBUG=1,-D__DEBUG=__DEBUG,,$(MP_LINKER_FILE_OPTION),--stack=16,--check-sections,--data-init,--pack-data,--handles,--isr,--no-gc-sections,--fill-upper=0,--stackguard=16,--no-force-link,--smart-io,-Map="${DISTDIR}/${PROJECTNAME}.${IMAGE_TYPE}.map",--report-mem,--memorysummary,${DISTDIR}/memoryfile.xml$(MP_EXTRA_LD_POST)  -mdfp="${DFP_DIR}/xc16" 
 	
 else
 ${DISTDIR}/refactored-octo-potato.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk   

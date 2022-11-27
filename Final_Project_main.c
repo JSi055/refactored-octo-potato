@@ -12,7 +12,7 @@
 //#include "Final_Project_AsmLib.h"
 
 #include "Noritake_VFD_CUU_ported.h"
-
+#include "lonne025_delays_v002.h"
 #include "running_average.h"
 
 #pragma config ICS = PGx1          // Comm Channel Select (Emulator EMUC1/EMUD1 pins are shared with PGC1/PGD1)
@@ -38,7 +38,22 @@
 // TODO: we might need just the right amount of noise.
 volatile average_moving_exponential vbat_avg;
 
+CUU_Interface screen_interface;
 Noritake_VFD_CUU screen;
+
+void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
+    _AD1IF = 0; // clear IF flag
+    
+    // 1 = A/D is currently filling ADC1BUF8-ADC1BUFF,
+    //         user should access data in ADC1BUF0-ADC1BUF7
+    // 0 = A/D is currently filling ADC1BUF0-ADC1BUF7,
+    //         user should access data in ADC1BUF8-ADC1BUFF
+    int offset = AD1CON2bits.BUFS ? 0 : 8;
+    for (int i = offset; i < offset + 8; i++) {
+        // ADC1BUF (0 through 15) are consecutive in memory
+        exp_mov_put(&vbat_avg, (&ADC1BUF0)[i]);
+    }
+}
 
 void setup() {
  
@@ -52,9 +67,9 @@ void setup() {
     //LATBbits.LATB7 = 0; // default
     //LATBbits.LATB8 = 0; //
     
-    TRISBbits.TRISB6 = 0; // Set RB6, RB7, and RB8 as Outputs
-    TRISBbits.TRISB7 = 0; //
-    TRISBbits.TRISB8 = 0; //
+    TRISAbits.TRISA4 = 0; // Set RA4, RB4, and RA3 as Outputs
+    TRISBbits.TRISB4 = 0; //
+    TRISAbits.TRISA3 = 0; //
     // ============== end Digital Pins ==============
     
     
@@ -70,7 +85,7 @@ void setup() {
     AD1CSSL = 1 << BAT_VOLTAGE_PIN; // cycle through AN0 through AN4
     //AD1CHSbits.CH0NA = BAT_VOLTAGE_PIN;
     
-    AD1CON2bits.SMPI = (1-1); // interrupt after 1 conversion cycle(s)
+    AD1CON2bits.SMPI = (8-1); // interrupt after 8 conversion cycle(s)
     AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
     
     // sample and convert cycles = (12 + SAMC) * ADCS = (12 + 10) * 2 = 44
@@ -82,7 +97,8 @@ void setup() {
     
     _AD1IF = 0; // clear IF flag
     _AD1IP = 4; // set priority 4 (default) TODO: compare to other interrupts
-    _AD1IE = 1; // enable interrupts 
+    //_AD1IE = 1; // enable interrupts 
+    // FIXME: DISABLED ADC INT WHILE I DEBUG!!! IF I FORGOT TO FIX THIS BLAME THOMAS!!!
     
     AD1CON1bits.ADON = 1; // start the analog to digital converter
     // ============== end Setup ADC ==============
@@ -91,6 +107,9 @@ void setup() {
     // ================ Setup UART ================
     // (115200 baud TTL to send data, and get commands from a PC)
     // TODO: pick the pins!
+    
+    // initialize average thingys
+    exp_mov_create(&vbat_avg, 60);
     
         __builtin_write_OSCCONL(OSCCON & 0xBF);
     //RPINR18bits.U1RXR =
@@ -112,7 +131,23 @@ void setup() {
     //  (Initialize the Noritake itron CU16025ECPB-U5J
     //   VFD display. Note: this setup uses delays)
     
+    CUU_M68_4_create(&screen_interface);
+    screen_interface.RS_PIN = 0x15;
+    screen_interface.RW_PIN = 0x16;
+    screen_interface.E_PIN  = 0x17;
+    screen_interface.D4_PIN = 0x18;
+    screen_interface.D5_PIN = 0x19;
+    screen_interface.D6_PIN = 0x1A;
+    screen_interface.D7_PIN = 0x1B;
     
+    CUU_begin(&screen, 16, 2);    // 16x2 character module
+    CUU_interface(&screen, &screen_interface); // select which interface to use
+
+    CUU_init(&screen);          // initialize module
+    CUU_europeanFont(&screen);  // select European font for DS2045G - I dont think this does anything for the U5J (spec says that bit is itnored)
+
+    CUU_setCursor_2d(&screen, 1, 1);
+    CUU_print_str(&screen, "Hello World");
     
     // ============== end Setup VFD Screen ==============
 }
@@ -120,11 +155,20 @@ void setup() {
 int main() {
     setup();
     while(1){
-        LATBbits.LATB6 = 1;
+        /*LATBbits.LATB6 = 1;
         LATBbits.LATB6 = 0;
         LATBbits.LATB7 = 1;
         LATBbits.LATB7 = 0;
         LATBbits.LATB8 = 1;
-        LATBbits.LATB8 = 0;
+        LATBbits.LATB8 = 0;*/
+        
+        waitMS(20);
+        
+        CUU_setCursor_2d(&screen, 0, 0);
+        CUU_print_str(&screen, "v: ");
+        avg_fetch avg = exp_mov_fetch(&screen);
+        CUU_print_uint(&screen, avg.val, 10);
+        CUU_print_str(&screen, " p: ");
+        CUU_print_uint(&screen, avg.purity, 10);
     }
 }
