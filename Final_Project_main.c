@@ -32,6 +32,7 @@
 
 
 #define BAT_VOLTAGE_PIN 9 // AN9
+//test
 
 // Keeps a running average of the battery voltage. Maybe we can squeeze another
 // 2 bits of precision by averaging some noise.
@@ -152,10 +153,15 @@ void setup() {
     // ============== end Setup VFD Screen ==============
 }
 
-int main() {
+int main() {    //main will need all setup functions, write UARTS, and sending signals 
     setup();
+<<<<<<< HEAD
     while(1){
         /*LATBbits.LATB6 = 1;
+=======
+    while(1){   
+        LATBbits.LATB6 = 1;
+>>>>>>> 2296eef6fe2dd7910953838e99c4841d609df497
         LATBbits.LATB6 = 0;
         LATBbits.LATB7 = 1;
         LATBbits.LATB7 = 0;
