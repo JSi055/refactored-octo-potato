@@ -90,16 +90,15 @@ void setup() {
     AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
     
     // sample and convert cycles = (12 + SAMC) * ADCS = (12 + 10) * 2 = 44
-    AD1CON3bits.ADCS = (2-1); // 2 x Tcy = 125ns
+    AD1CON3bits.ADCS = (50-1); // 3 x Tcy = 187.2ns
     // If our resistor network is 10k Ohm, and the cap is 4.4pF, the RC
     // time constant is 0.704 cycles.
-    // e^-(0.704*t) = 1024, t = 9.85 cycles. Lets double that for safety.
-    AD1CON3bits.SAMC = 10;
+    // e^-(t/(4.4*10^-12 * 110*10^3 * 16000000))=1/1024, t = 53.7 cycles.
+    AD1CON3bits.SAMC = 31; // 93 cycles for extra margins
     
     _AD1IF = 0; // clear IF flag
     _AD1IP = 4; // set priority 4 (default) TODO: compare to other interrupts
-    //_AD1IE = 1; // enable interrupts 
-    // FIXME: DISABLED ADC INT WHILE I DEBUG!!! IF I FORGOT TO FIX THIS BLAME THOMAS!!!
+    _AD1IE = 1; // enable interrupts
     
     AD1CON1bits.ADON = 1; // start the analog to digital converter
     // ============== end Setup ADC ==============
@@ -155,13 +154,8 @@ void setup() {
 
 int main() {    //main will need all setup functions, write UARTS, and sending signals 
     setup();
-<<<<<<< HEAD
     while(1){
         /*LATBbits.LATB6 = 1;
-=======
-    while(1){   
-        LATBbits.LATB6 = 1;
->>>>>>> 2296eef6fe2dd7910953838e99c4841d609df497
         LATBbits.LATB6 = 0;
         LATBbits.LATB7 = 1;
         LATBbits.LATB7 = 0;
@@ -170,9 +164,13 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         
         waitMS(20);
         
+        // CALIBRATION POINTS (at Tom's home, Nov 26, with BM786):
+        // 5610 ==> 3.2880v
+        
+        
         CUU_setCursor_2d(&screen, 0, 0);
         CUU_print_str(&screen, "v: ");
-        avg_fetch avg = exp_mov_fetch(&screen);
+        avg_fetch avg = exp_mov_fetch(&vbat_avg, 8);
         CUU_print_uint(&screen, avg.val, 10);
         CUU_print_str(&screen, " p: ");
         CUU_print_uint(&screen, avg.purity, 10);
