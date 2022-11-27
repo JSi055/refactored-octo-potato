@@ -36,13 +36,18 @@
 
 // Keeps a running average of the battery voltage. Maybe we can squeeze another
 // 2 bits of precision by averaging some noise.
-// TODO: we might need just the right amount of noise.
-volatile average_moving_exponential vbat_avg;
+// note: we might need just the right amount of noise.
+// Removing volatile saved some cycles and it still seems to work.
+average_moving_exponential vbat_avg;
 
 CUU_Interface screen_interface;
 Noritake_VFD_CUU screen;
+volatile uint16_t debug_profile;
 
+// 3950 cycles with -O2 or -O3
+// 4350 cycles with -O0
 void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
+    debug_profile = TMR1; // DEBUG
     _AD1IF = 0; // clear IF flag
     
     // 1 = A/D is currently filling ADC1BUF8-ADC1BUFF,
@@ -54,9 +59,23 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
         // ADC1BUF (0 through 15) are consecutive in memory
         exp_mov_put(&vbat_avg, (&ADC1BUF0)[i]);
     }
+    debug_profile = TMR1 - debug_profile; // DEBUG
+}
+
+void setup_debug() {
+    // We have _ADC1Interrupt taking too long! profile it!
+    // ======= DEBUG TIMER (Timer3) ======
+    T1CON = 0;
+    TMR1 = 0;
+    
+    PR1 = 0xFFFF;
+    T1CONbits.TCKPS = 0b00; // 1 pre-scale
+    
+    T1CONbits.TON = 1; // turn on the timber
 }
 
 void setup() {
+    setup_debug();
  
     // Make all pins digital accept for the battery voltage sensing pin
     AD1PCFG = 0x9FFF & ~(1 << BAT_VOLTAGE_PIN);    
@@ -77,8 +96,12 @@ void setup() {
     // ================ Setup ADC ================
     //           (Battery Voltage Sensing)
     // TODO: Current Sensing
+    
+    // initialize average thingys
+    exp_mov_create(&vbat_avg, 60);
+    
     AD1CON1 = 0;
-    AD1CON1bits.SSRC = 0b111;    // Internal counter (auto-convert)
+    AD1CON1bits.SSRC = 0b010;    // Timer3 - sample on compare
     AD1CON1bits.ASAM = 1;        // Turn on auto-sample after conversion.
     // AD1CON1bits.FORM = 0b00;  // integer format (0 - 1023)
     
@@ -90,16 +113,24 @@ void setup() {
     AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
     
     // sample and convert cycles = (12 + SAMC) * ADCS = (12 + 10) * 2 = 44
-    AD1CON3bits.ADCS = (50-1); // 3 x Tcy = 187.2ns
-    // If our resistor network is 10k Ohm, and the cap is 4.4pF, the RC
-    // time constant is 0.704 cycles.
+    AD1CON3bits.ADCS = (3-1); // 3 x Tcy = 187.2ns
+    //AD1CON3bits.SAMC = 31; // Using Timer3 instead
+    
+    T3CON = 0;
+    TMR3 = 0;
+    
+    // FIXME: The _ADC1Interrupt takes too long to process the values!
+    // If our resistor network is 110k Ohm, and the cap is 4.4pF, the RC
+    // time constant is R * C * (1/16M) cycles.
     // e^-(t/(4.4*10^-12 * 110*10^3 * 16000000))=1/1024, t = 53.7 cycles.
-    AD1CON3bits.SAMC = 31; // 93 cycles for extra margins
+    PR3 = 1400; // convert time takes up (ADCS+1) * 12 = 36
+    T3CONbits.TCKPS = 0b00; // 1 pre-scale
     
     _AD1IF = 0; // clear IF flag
     _AD1IP = 4; // set priority 4 (default) TODO: compare to other interrupts
     _AD1IE = 1; // enable interrupts
     
+    T3CONbits.TON = 1; // turn on the timber
     AD1CON1bits.ADON = 1; // start the analog to digital converter
     // ============== end Setup ADC ==============
     
@@ -107,9 +138,6 @@ void setup() {
     // ================ Setup UART ================
     // (115200 baud TTL to send data, and get commands from a PC)
     // TODO: pick the pins!
-    
-    // initialize average thingys
-    exp_mov_create(&vbat_avg, 60);
     
         __builtin_write_OSCCONL(OSCCON & 0xBF);
     //RPINR18bits.U1RXR =
@@ -174,5 +202,11 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         CUU_print_uint(&screen, avg.val, 10);
         CUU_print_str(&screen, " p: ");
         CUU_print_uint(&screen, avg.purity, 10);
+        CUU_print_str(&screen, "  ");
+        
+        CUU_setCursor_2d(&screen, 0, 1);
+        CUU_print_str(&screen, "DBG: ");
+        CUU_print_uint(&screen, debug_profile, 10);
+        CUU_print_str(&screen, "  ");
     }
 }

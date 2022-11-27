@@ -45,31 +45,46 @@ typedef struct avg_fetch_struct {
  * @param moving The average_moving_exponential to initialize
  * @param setpoint The number of values that make up about 63% of the average.
  */
-void exp_mov_create(volatile average_moving_exponential* moving, uint16_t setpoint);
+void exp_mov_create(average_moving_exponential* moving, uint16_t setpoint);
 
 /**
  * Add a value to the moving average.
  */
-void exp_mov_put(volatile average_moving_exponential* moving, uint16_t value);
+static inline void exp_mov_put(average_moving_exponential* moving, uint16_t value) {
+    if (moving->count < moving->setpoint) {
+        // accumulate more values until the setpoint is reached
+        moving->count++;
+    } else {
+        // remove a value from the sum to make space for the new one
+        moving->sum -= moving->sum / moving->count;
+    }
+    // add 1 to purity or stay at max
+    // a purity higher than the setpoint
+    // uniqueness = 1 - e^-(purity/count)
+    // when purity == setpoint, we have roughly %63 uniqueness
+    moving->purity += moving->purity == 0xFFFF ? 0 : 1;
+    // add the new value to the sum
+    moving->sum += value;
+}
 
 /**
  * Get the average without resetting purity.
  * An overPrecision > 1 allows more precision to be squeezed out than the
  * values put into the average.
  */
-uint16_t exp_mov_poll(volatile average_moving_exponential* moving, uint8_t overPrecision);
+uint16_t exp_mov_poll(average_moving_exponential* moving, uint8_t overPrecision);
 
 /**
  * Fetch the current average value and purity.
  * An overPrecision > 1 allows more precision to be squeezed out than the
  * values put into the average.
  */
-avg_fetch exp_mov_fetch(volatile average_moving_exponential* moving, uint8_t overPrecision);
+avg_fetch exp_mov_fetch(average_moving_exponential* moving, uint8_t overPrecision);
 
 /**
  * Update's the setpoint
  */
-void exp_mov_updateSetpoint(volatile average_moving_exponential* moving, uint16_t setpoint);
+void exp_mov_updateSetpoint(average_moving_exponential* moving, uint16_t setpoint);
 
 #ifdef	__cplusplus
 }
