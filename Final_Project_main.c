@@ -44,8 +44,8 @@ CUU_Interface screen_interface;
 Noritake_VFD_CUU screen;
 volatile uint16_t debug_profile;
 
-// 3950 cycles with -O2 or -O3
-// 4350 cycles with -O0
+// with division: 3950 cycles with -O2 or -O3
+// with division: 4350 cycles with -O0
 void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
     debug_profile = TMR1; // DEBUG
     _AD1IF = 0; // clear IF flag
@@ -74,6 +74,30 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
         vbat_avg.sum += (&ADC1BUF0)[i];
     }
     debug_profile = TMR1 - debug_profile; // DEBUG
+}
+
+void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
+    _U1RXIF = 0;
+    
+    // TODO: Read the first byte to know the packet type. Start building
+    // the packet. Once the packet is complete, process it with its handler function.
+    // struct { char type; char (*handler_ptr)(char* buffer, char len) }
+    // The handler will read the current buffer and return the number of bytes
+    // to buffer before the next call. If bit 7 is set, the buffer is consumed.
+    // If the return value is 0, the packet is complete and the next byte is another
+    // command.
+}
+
+void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
+    _U1TXIF = 0;
+    
+    // TODO: If data needs transmitting, take it out of the queue
+    // and put it in the TX buffer. The queue should block if it is full,
+    // so the main process may be waiting on us.
+    // TODO: The queue put function should set _U1TXIF so we don't freeze
+    // TODO: If data needs streaming, put it in the TX buffer
+    
+    
 }
 
 void setup_debug() {
@@ -154,19 +178,29 @@ void setup() {
     // (115200 baud TTL to send data, and get commands from a PC)
     // TODO: pick the pins!
     
-        __builtin_write_OSCCONL(OSCCON & 0xBF);
-    //RPINR18bits.U1RXR =
+    __builtin_write_OSCCONL(OSCCON & 0xBF);
+    RPINR18bits.U1RXR = 2; // RP2 ===> U1RX
     //RPINR18bits.U1CTSR =
-    //RPOR bits.RP R = 3;
+    RPOR1bits.RP3R = 3;    // U1TX ===> RP3. note: '3' is the U1TX number, not pin
     //RPOR bits.RP R = 3;
     __builtin_write_OSCCONL(OSCCON | 0x40);
     
-    U1BRG = 99;     //baud = 10000, temporary
-    U1MODE = 0000;  //PDSEL = 00, STSEL = 0; BRGH = 0, UEN = 0;
-//    IEC0bits.U1TXIE = 1; //optional  interrupts
-//    IEC0bits.U1RXIE = 1;
-    U1MODEbits.UARTEN = 1;
-    U1STA = 0x400;  //UXTEN = 1; 
+    U1BRG = 34;               //baud = 115200 TODO: try faster speeds if it works
+    U1MODE = 0;
+    U1MODEbits.BRGH = 1;      // fast mode (divide by 4 instead of 16 for U1BRG)
+    U1MODEbits.PDSEL = 0b00;  // no parity. TODO: use software parity or hardware
+    U1MODEbits.STSEL = 0;     // one stop bit
+    U1STAbits.URXISEL = 0b10; // Interrupt when RX buffer is 3/4 full
+    U1STAbits.UTXISEL1 = 1; // 0b10 Interrupt when TX buffer is empty
+    U1STAbits.UTXISEL0 = 0; // ^^^^
+    
+    _U1TXIF = 0;
+    _U1RXIF = 0;
+    IEC0bits.U1TXIE = 1; //optional  interrupts
+    IEC0bits.U1RXIE = 1;
+
+    U1STAbits.UTXEN = 1;    // enable transmit
+    U1MODEbits.UARTEN = 1;  // enable U1 UART
     // ============== end Setup UART ==============
     
     
