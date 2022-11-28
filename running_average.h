@@ -24,7 +24,7 @@ typedef struct exp_mov_average_struct {
     // Stones the number of values tracked by the sum. This value stops going up
     // when the setpoint is reached.
     uint16_t count;
-    // The number of values that should make up about 63% of the average.
+    // The 2^setpoint number of values that should make up about 63% of the average.
     // Our 'time constant' so to speak.
     uint16_t setpoint;
     // The humber of values we have received sense the last fetch operation.
@@ -51,12 +51,12 @@ void exp_mov_create(average_moving_exponential* moving, uint16_t setpoint);
  * Add a value to the moving average.
  */
 static inline void exp_mov_put(average_moving_exponential* moving, uint16_t value) {
-    if (moving->count < moving->setpoint) {
+    if (moving->count < 1 << moving->setpoint) {
         // accumulate more values until the setpoint is reached
         moving->count++;
     } else {
         // remove a value from the sum to make space for the new one
-        moving->sum -= moving->sum / moving->count;
+        moving->sum -= moving->sum >> moving->setpoint;
     }
     // add 1 to purity or stay at max
     // a purity higher than the setpoint

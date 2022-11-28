@@ -57,7 +57,21 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
     int offset = AD1CON2bits.BUFS ? 0 : 8;
     for (int i = offset; i < offset + 8; i++) {
         // ADC1BUF (0 through 15) are consecutive in memory
-        exp_mov_put(&vbat_avg, (&ADC1BUF0)[i]);
+        
+        if (vbat_avg.count < 1 << vbat_avg.setpoint) {
+            // accumulate more values until the setpoint is reached
+            vbat_avg.count++;
+        } else {
+            // remove a value from the sum to make space for the new one
+            vbat_avg.sum -= vbat_avg.sum >> vbat_avg.setpoint;
+        }
+        // add 1 to purity or stay at max
+        // a purity higher than the setpoint
+        // uniqueness = 1 - e^-(purity/count)
+        // when purity == setpoint, we have roughly %63 uniqueness
+        vbat_avg.purity += vbat_avg.purity == 0xFFFF ? 0 : 1;
+        // add the new value to the sum
+        vbat_avg.sum += (&ADC1BUF0)[i];
     }
     debug_profile = TMR1 - debug_profile; // DEBUG
 }
@@ -98,7 +112,7 @@ void setup() {
     // TODO: Current Sensing
     
     // initialize average thingys
-    exp_mov_create(&vbat_avg, 60);
+    exp_mov_create(&vbat_avg, 7); // 1 << 5 = 64
     
     AD1CON1 = 0;
     AD1CON1bits.SSRC = 0b010;    // Timer3 - sample on compare
@@ -111,6 +125,7 @@ void setup() {
     
     AD1CON2bits.SMPI = (8-1); // interrupt after 8 conversion cycle(s)
     AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
+    //AD1CON2bits.VCFG = 0b011; // External reference voltages (trying this to reduce noise)
     
     // sample and convert cycles = (12 + SAMC) * ADCS = (12 + 10) * 2 = 44
     AD1CON3bits.ADCS = (3-1); // 3 x Tcy = 187.2ns
@@ -123,7 +138,7 @@ void setup() {
     // If our resistor network is 110k Ohm, and the cap is 4.4pF, the RC
     // time constant is R * C * (1/16M) cycles.
     // e^-(t/(4.4*10^-12 * 110*10^3 * 16000000))=1/1024, t = 53.7 cycles.
-    PR3 = 1400; // convert time takes up (ADCS+1) * 12 = 36
+    PR3 = 140; // convert time takes up (ADCS+1) * 12 = 36
     T3CONbits.TCKPS = 0b00; // 1 pre-scale
     
     _AD1IF = 0; // clear IF flag
@@ -182,6 +197,9 @@ void setup() {
 
 int main() {    //main will need all setup functions, write UARTS, and sending signals 
     setup();
+    
+    uint16_t anti_flicker_last_val = 0;
+    
     while(1){
         /*LATBbits.LATB6 = 1;
         LATBbits.LATB6 = 0;
@@ -190,7 +208,7 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         LATBbits.LATB8 = 1;
         LATBbits.LATB8 = 0;*/
         
-        waitMS(20);
+        //waitMS(20);
         
         // CALIBRATION POINTS (at Tom's home, Nov 26, with BM786):
         // 5610 ==> 3.2880v
@@ -199,7 +217,12 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         CUU_setCursor_2d(&screen, 0, 0);
         CUU_print_str(&screen, "v: ");
         avg_fetch avg = exp_mov_fetch(&vbat_avg, 8);
-        CUU_print_uint(&screen, avg.val, 10);
+        int16_t diff = anti_flicker_last_val - avg.val;
+        if (diff > 1 || diff < -1) {
+            anti_flicker_last_val = avg.val;
+        }
+        
+        CUU_print_uint(&screen, anti_flicker_last_val >> 1, 10);
         CUU_print_str(&screen, " p: ");
         CUU_print_uint(&screen, avg.purity, 10);
         CUU_print_str(&screen, "  ");
