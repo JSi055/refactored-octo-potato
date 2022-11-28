@@ -86,6 +86,37 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     // to buffer before the next call. If bit 7 is set, the buffer is consumed.
     // If the return value is 0, the packet is complete and the next byte is another
     // command.
+    
+    // simple command reader
+    while (U1STAbits.URXDA) { // while there is stuff in the RX buffer...
+        TRISAbits.TRISA4 = 0; // 100 Ohm
+        TRISBbits.TRISB4 = 0; // 500 Ohm
+        TRISAbits.TRISA3 = 0; // 2000 Ohm
+        uint8_t val = U1RXREG;
+        U1TXREG = val; // ECHO TEST
+        switch(val) {
+            case '1': // 100 Ohm
+                LATAbits.LATA4 = 1;
+                break;
+            case '2': // 500 Ohm
+                LATBbits.LATB4 = 1;
+                break;
+            case '3': // 2000 Ohm
+                LATAbits.LATA3 = 1;
+                break;
+            case '4': // 100 Ohm off
+                LATAbits.LATA4 = 0;
+                break;
+            case '5': // 500 Ohm off
+                LATBbits.LATB4 = 0;
+                break;
+            case '6': // 2000 Ohm off
+                LATAbits.LATA3 = 0;
+                break;
+            default: // unknown command
+                break;
+        }
+    }
 }
 
 void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
@@ -113,6 +144,9 @@ void setup_debug() {
 }
 
 void setup() {
+    // By default it is 1 (devide clock by 2). 0 is divide by 1.
+    CLKDIVbits.RCDIV = 0b000;  //Set RCDIV=1:1 (default 2:1) 32MHz or FCY/2=16M
+    
     setup_debug();
  
     // Make all pins digital accept for the battery voltage sensing pin
@@ -125,9 +159,10 @@ void setup() {
     //LATBbits.LATB7 = 0; // default
     //LATBbits.LATB8 = 0; //
     
-    TRISAbits.TRISA4 = 0; // Set RA4, RB4, and RA3 as Outputs
-    TRISBbits.TRISB4 = 0; //
-    TRISAbits.TRISA3 = 0; //
+    // Set RA4, RB4, and RA3 as Outputs
+    TRISAbits.TRISA4 = 0; // 100 Ohm
+    TRISBbits.TRISB4 = 0; // 500 Ohm
+    TRISAbits.TRISA3 = 0; // 2000 Ohm
     // ============== end Digital Pins ==============
     
     
@@ -185,12 +220,16 @@ void setup() {
     //RPOR bits.RP R = 3;
     __builtin_write_OSCCONL(OSCCON | 0x40);
     
-    U1BRG = 34;               //baud = 115200 TODO: try faster speeds if it works
     U1MODE = 0;
+    U1BRG = 34;              //34 = baud = 115200 TODO: try faster speeds if it works
     U1MODEbits.BRGH = 1;      // fast mode (divide by 4 instead of 16 for U1BRG)
     U1MODEbits.PDSEL = 0b00;  // no parity. TODO: use software parity or hardware
     U1MODEbits.STSEL = 0;     // one stop bit
-    U1STAbits.URXISEL = 0b10; // Interrupt when RX buffer is 3/4 full
+    // Interrupt when RX buffer is 3/4 full (0b10) caused the last parts of
+    // some commands to sit in the buffer until the next command was sent.
+    // Maybe we could fix this by triggering the interrupt when the receiver
+    // has gone idle (I know there is a bit for that somewhere).
+    U1STAbits.URXISEL = 0b00; // Interrupt every byte
     U1STAbits.UTXISEL1 = 1; // 0b10 Interrupt when TX buffer is empty
     U1STAbits.UTXISEL0 = 0; // ^^^^
     
@@ -199,8 +238,8 @@ void setup() {
     IEC0bits.U1TXIE = 1; //optional  interrupts
     IEC0bits.U1RXIE = 1;
 
-    U1STAbits.UTXEN = 1;    // enable transmit
     U1MODEbits.UARTEN = 1;  // enable U1 UART
+    U1STAbits.UTXEN = 1;    // enable transmit
     // ============== end Setup UART ==============
     
     
@@ -246,7 +285,6 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         
         // CALIBRATION POINTS (at Tom's home, Nov 26, with BM786):
         // 5610 ==> 3.2880v
-        
         
         CUU_setCursor_2d(&screen, 0, 0);
         CUU_print_str(&screen, "v: ");
