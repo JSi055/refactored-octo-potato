@@ -79,58 +79,30 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
 void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     _U1RXIF = 0;
     
-    // TODO: Read the first byte to know the packet type. Start building
-    // the packet. Once the packet is complete, process it with its handler function.
-    // 
-    //struct { char type; char (*handler_ptr)(char* buffer, char len) }
-    // 
-    //The handler will read the current buffer and return the number of bytes
-    // to buffer before the next call. If bit 7 is set, the buffer is consumed.
-    // If the return value is 0, the packet is complete and the next byte is another
-    // command.
+    // TODO: confirm functionality
+    // implement on array
     
-    struct Cmd{ char type; char (*handler_ptr)(char* buffer, char len) };   //declare struct
+    struct Cmd{ char type; char length; } cur_Cmd;   //declare struct
+    cur_Cmd.type = U1RXREG;    //add type to packet
     
-    uint8_t byteType = U1RXREG; //save first byte for type
-    int end = 0, byteCount = 0; //declaring these variables is not the most efficient way, will need work
-    while((U1STAbits.URXDA && (end == 0))){     //while RX buffer contains data
-        uint8_t curByte = U1RXREG;  //get byte
-        if((curByte & 128) == 1){      //mask so only bit 7 can be 1
-            //implement buffer here
-            byteCount++;    //increment for length
+    //handler
+    char byteCount = 1;         //includes command byte         
+    while(U1STAbits.URXDA){     //while RX buffer contains data
+        if((U1RXREG & 128) == 1){   //mask so only bit 7 can be 1
+            //buffer consumed?
+            byteCount++;
+            array[byteCount++] = U1RXREG;   //if needed, each byte can be added to an array
+        }                                   //array not created/implemented yet
+        else{                       //if return is 0
+            byteCount++;
+            array[byteCount++] = U1RXREG;
+            break;                  //loop will be left, giving a length
         }
-        else
-            end = 1;
     }
+    cur_Cmd.length = byteCount; //add command length to packet
     
-    switch(byteType){           
-        //not sure if switch is best here, can be changed
-        //each case will create a current command struct with pointer and count
-        //pointers are temporary, need creation
-        //loop above could be added into handler
-        
-        //note: alternative method could involve array of structures
-        //      struct would be declared above
-        case 'c':   //calibrate
-            struct Cmd currentCmd = {'c',(*calibrate_ptr)(byteCount)};
-            break;
-        case 'b':   //start -- b is for begin
-            struct Cmd currentCmd = {'c',(*start_ptr)(byteCount)};
-            break;
-        case 'e':   //stop
-            struct Cmd currentCmd = {'c',(*stop_ptr)(byteCount)};
-            break;
-        case 'x':   //execute
-            struct Cmd currentCmd = {'c',(*execute_ptr)(byteCount)};
-            break;
-        case 's':   //status
-            struct Cmd currentCmd = {'c',(*status_ptr)(byteCount)};
-            break;
-        default:            
-            break;
-                    //can be expanded with more commands     
     
-            // simple command reader    
+    // simple command reader    
     while (U1STAbits.URXDA) { // while there is stuff in the RX buffer...
         TRISAbits.TRISA4 = 0; // 100 Ohm
         TRISBbits.TRISB4 = 0; // 500 Ohm
