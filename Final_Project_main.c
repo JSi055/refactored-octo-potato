@@ -81,6 +81,10 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     
     // TODO: confirm functionality
     // implement on array
+    //
+    //user input id+bytes for info
+    //in interrupt 'char'->handler 
+    //handlers 
     
     struct Cmd{ char type; char length; } cur_Cmd;   //declare struct
     cur_Cmd.type = U1RXREG;    //add type to packet
@@ -99,7 +103,7 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
             break;                  //loop will be left, giving a length
         }
     }
-    cur_Cmd.length = byteCount; //add command length to packet
+    cur_Cmd.length = byteCount; //add command length to packet 
     
     
     // simple command reader    
@@ -140,6 +144,7 @@ void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
     // TODO: If data needs transmitting, take it out of the queue
     // and put it in the TX buffer. The queue should block if it is full,
     // so the main process may be waiting on us.
+    
     // TODO: The queue put function should set _U1TXIF so we don't freeze
     // TODO: If data needs streaming, put it in the TX buffer
     
