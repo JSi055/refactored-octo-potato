@@ -77,20 +77,25 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
     debug_profile = TMR1 - debug_profile; // DEBUG
 }
 
-//temorary placement in this file, can be reverted
 
 void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     _U1RXIF = 0;   
     
     uint8_t curByte = U1RXREG;
     
+    //command reader
     //if handler currently running - do not detect for char
+    
     switch(curByte) {   //determine if char is sent
         case 'a':
-    
-    //test
-    
-    
+            ex_ptr(curByte);
+            break;
+        case '':
+            break;
+        case '':
+            break;
+            
+            
     // simple command reader    
     while (U1STAbits.URXDA) { // while there is stuff in the RX buffer...
         TRISAbits.TRISA4 = 0; // 100 Ohm
