@@ -89,6 +89,7 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     switch(curByte) {   //determine if char is sent
         case 'a':
             ex_ptr(curByte);
+            
             break;
         case '':
             break;
