@@ -14,6 +14,7 @@
 #include "Noritake_VFD_CUU_ported.h"
 #include "lonne025_delays_v002.h"
 #include "running_average.h"
+#include "Input_handler_Functions.h"
 
 #pragma config ICS = PGx1          // Comm Channel Select (Emulator EMUC1/EMUD1 pins are shared with PGC1/PGD1)
 #pragma config FWDTEN = OFF        // Watchdog Timer Enable (Watchdog Timer is disabled)
@@ -76,34 +77,18 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
     debug_profile = TMR1 - debug_profile; // DEBUG
 }
 
+//temorary placement in this file, can be reverted
+
 void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
-    _U1RXIF = 0;
+    _U1RXIF = 0;   
     
-    // TODO: confirm functionality
-    // implement on array
-    //
-    //user input id+bytes for info
-    //in interrupt 'char'->handler 
-    //handlers 
+    uint8_t curByte = U1RXREG;
     
-    struct Cmd{ char type; char length; } cur_Cmd;   //declare struct
-    cur_Cmd.type = U1RXREG;    //add type to packet
+    //if handler currently running - do not detect for char
+    switch(curByte) {   //determine if char is sent
+        case 'a':
     
-    //handler
-    char byteCount = 1;         //includes command byte         
-    while(U1STAbits.URXDA){     //while RX buffer contains data
-        if((U1RXREG & 128) == 1){   //mask so only bit 7 can be 1
-            //buffer consumed?
-            byteCount++;
-            array[byteCount++] = U1RXREG;   //if needed, each byte can be added to an array
-        }                                   //array not created/implemented yet
-        else{                       //if return is 0
-            byteCount++;
-            array[byteCount++] = U1RXREG;
-            break;                  //loop will be left, giving a length
-        }
-    }
-    cur_Cmd.length = byteCount; //add command length to packet 
+    //test
     
     
     // simple command reader    
