@@ -11,14 +11,17 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-void (*s_ptr)(uint8_t curByte)= status_handler; 
-void (*T_ptr)(uint8_t curByte)= pulse_handler;
-void (*f_ptr)(uint8_t curByte)= toggle_handler;
-void (*D_ptr)(uint8_t curByte)= dump_handler;
-void (*v_ptr)(uint8_t curByte)= stream_handler;
-void (*t_ptr)(uint8_t curByte)= test_handler;
-void (*c_ptr)(uint8_t curByte)= calibration_handler;
-void (*l_ptr)(uint8_t curByte)= load_handler;
+struct cmd {char cmd_type; 
+            int (*handler_ptr)(char* buffer, int len); };
+
+void (*s_ptr)(char input_buffer[], int length)= status_handler; 
+void (*T_ptr)(char input_buffer[], int length)= pulse_handler;
+void (*f_ptr)(char input_buffer[], int length)= toggle_handler;
+void (*D_ptr)(char input_buffer[], int length)= dump_handler;
+void (*v_ptr)(char input_buffer[], int length)= stream_handler;
+void (*t_ptr)(char input_buffer[], int length)= test_handler;
+void (*c_ptr)(char input_buffer[], int length)= calibration_handler;
+void (*l_ptr)(char input_buffer[], int length)= load_handler;
 
 
 #ifdef	__cplusplus
