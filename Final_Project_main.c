@@ -81,22 +81,54 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
 void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     _U1RXIF = 0;   
     
-    uint8_t curByte = U1RXREG;
     
-    //command reader
-    //if handler currently running - do not detect for char
+   // TODO: Read the first byte to know the packet type. Start building
+    // the packet. Once the packet is complete, process it with its handler function.
+    // 
+    //struct { char type; char (*handler_ptr)(char* buffer, char len) }
+    //The handler will read the current buffer and return the number of bytes
+    // to buffer before the next call. If bit 7 is set, the buffer is consumed.
+    // If the return value is 0, the packet is complete and the next byte is another
+    // command.
     
-    switch(curByte) {   //determine if char is sent
-        case 'a':
-            ex_ptr(curByte);
-            
+    input_buffer[front++] = U1RXREG;
+    if(front >= 1000)                  //adds new byte to circular buffer
+        front = 0;
+    
+    if(input_buffer[front-1] ){
+        inputbuffer[x]=curbyte
+        x++;
+    }
+    else
+        go to switch
+                
+    switch(input_buffer[read]) {   //determine if char is sent    
+        case 's':   //print status string
+            s_ptr{input_buffer[],}; 
             break;
-        case '':
+        case 'T':   //test pulse
+            T_ptr{input_buffer[],}; 
             break;
-        case '':
+        case 'f':    //voltage stream on/off
+            f_ptr(){input_buffer[],}; 
             break;
-            
-            
+        case 'D':    //dump data
+            D_ptr(){input_buffer[],}; 
+            break;
+        case 'v':    //voltage stream packets
+            v_ptr(){input_buffer[],}; 
+            break;
+        case 't':    //conduct test
+            t_ptr(){input_buffer[],}; 
+            break;
+        case 'c':   //calibrate voltage or current
+            c_ptr(){input_buffer[],}; 
+            break;
+         case 'l':   //set load in micro amps
+            l_ptr(){input_buffer[],}; 
+            break;   
+    }
+    
     // simple command reader    
     while (U1STAbits.URXDA) { // while there is stuff in the RX buffer...
         TRISAbits.TRISA4 = 0; // 100 Ohm
@@ -277,6 +309,11 @@ void setup() {
     CUU_print_str(&screen, "Hello World");
     
     // ============== end Setup VFD Screen ==============
+    
+    //Setup Buffer
+    char input_Buffer[1000] = 0;
+    int buffer_pointer = 0;
+    //end setup Buffer
 }
 
 int main() {    //main will need all setup functions, write UARTS, and sending signals 
@@ -299,7 +336,8 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         
         //protoype A/D to UART. Not final position 
         //possible implementation with array for multiple voltages?
-        uint8_ voltage = ADC1BUF0; //6 bit 0, 10 bit a/d values
+        
+        uint8_t voltage = ADC1BUF0; //6 bit 0, 10 bit a/d values
         voltage = (voltage*points)/5610;  //this is a linear scaling of points to voltage for now
                                           //need more info on points for greater detail
                                           //also decimal points not fully accounted for yet
