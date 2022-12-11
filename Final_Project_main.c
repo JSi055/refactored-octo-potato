@@ -130,8 +130,8 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
 }
 
 void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
-    _U1TXIF = 0;
     
+}
     // TODO: If data needs transmitting, take it out of the queue
     // and put it in the TX buffer. The queue should block if it is full,
     // so the main process may be waiting on us.
@@ -296,6 +296,14 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         
         // CALIBRATION POINTS (at Tom's home, Nov 26, with BM786):
         // 5610 ==> 3.2880v
+        
+        //protoype A/D to UART. Not final position 
+        //possible implementation with array for multiple voltages?
+        uint8_ voltage = ADC1BUF0; //6 bit 0, 10 bit a/d values
+        voltage = (voltage*points)/5610;  //this is a linear scaling of points to voltage for now
+                                          //need more info on points for greater detail
+                                          //also decimal points not fully accounted for yet
+        U1TXREG or quene[] = voltage; //depends if direct send or put into quene for interrupt here
         
         CUU_setCursor_2d(&screen, 0, 0);
         CUU_print_str(&screen, "v: ");
