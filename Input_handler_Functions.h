@@ -11,7 +11,7 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-
+void (*ex_ptr)(uint8_t curByte)= example;
 
 
 
