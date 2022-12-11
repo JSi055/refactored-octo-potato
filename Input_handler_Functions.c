@@ -1,8 +1,36 @@
+
+
 #include "Input_handler_Functions.h"
 
-
-void example (uint8_t curByte){
+void status_handler(){
     
 }
 
-//toDo: add handlers! Use template as above. The rest can be done by me later 
+void pulse_handler(){
+    
+}
+
+void toggle_handler(){
+    
+}
+
+void dump_handler(){
+    
+}
+
+void stream_handler(){
+    
+}
+
+void test_handler(){
+    
+}
+
+void calibration_handler(){
+    
+}
+
+void load_handler(){
+    
+}
+ 
