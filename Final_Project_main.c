@@ -81,7 +81,6 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
 void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     _U1RXIF = 0;   
     
-    
    // TODO: Read the first byte to know the packet type. Start building
     // the packet. Once the packet is complete, process it with its handler function.
     // 
@@ -91,42 +90,39 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     // If the return value is 0, the packet is complete and the next byte is another
     // command.
     
-    input_buffer[front++] = U1RXREG;
-    if(front >= 1000)                  //adds new byte to circular buffer
-        front = 0;
-    
-    if(input_buffer[front-1] ){
-        inputbuffer[x]=curbyte
-        x++;
-    }
-    else
-        go to switch
-                
-    switch(input_buffer[read]) {   //determine if char is sent    
-        case 's':   //print status string
-            s_ptr{input_buffer[],}; 
-            break;
-        case 'T':   //test pulse
-            T_ptr{input_buffer[],}; 
-            break;
-        case 'f':    //voltage stream on/off
-            f_ptr(){input_buffer[],}; 
-            break;
-        case 'D':    //dump data
-            D_ptr(){input_buffer[],}; 
-            break;
-        case 'v':    //voltage stream packets
-            v_ptr(){input_buffer[],}; 
-            break;
-        case 't':    //conduct test
-            t_ptr(){input_buffer[],}; 
-            break;
-        case 'c':   //calibrate voltage or current
-            c_ptr(){input_buffer[],}; 
-            break;
-         case 'l':   //set load in micro amps
-            l_ptr(){input_buffer[],}; 
-            break;   
+    input_buffer[front++] = U1RXREG;    //add new byte to a buffer
+     
+    if((U1RXREG && 0x80) == 0){         //will only occur when byte taken in meets condition of bit 7=0
+                                        //which is the end of packet
+        switch(input_buffer[0]){   //determine what/if char is sent based on 1st char   
+            case 's':   //print status string
+                s_ptr{input_buffer[],front}; 
+                break;
+            case 'T':   //test pulse
+                T_ptr{input_buffer[],front}; 
+                break;
+            case 'f':    //voltage stream on/off
+                f_ptr(){input_buffer[],front}; 
+                break;
+            case 'D':    //dump data
+                D_ptr(){input_buffer[],front}; 
+                break;
+            case 'v':    //voltage stream packets
+                v_ptr(){input_buffer[],front}; 
+                break;
+            case 't':    //conduct test
+                t_ptr(){input_buffer[],front}; 
+                break;
+            case 'c':   //calibrate voltage or current
+                c_ptr(){input_buffer[],front}; 
+                break;
+             case 'l':   //set load in micro amps
+                l_ptr(){input_buffer[],front}; 
+                break;
+            default:
+                break;
+            }
+        front = 0;  //sets write back to beginning for new command
     }
     
     // simple command reader    
@@ -162,7 +158,8 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
 }
 
 void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
-    
+    _U1TXIF = 0;
+    U1TXREG = ; 
 }
     // TODO: If data needs transmitting, take it out of the queue
     // and put it in the TX buffer. The queue should block if it is full,
@@ -309,11 +306,6 @@ void setup() {
     CUU_print_str(&screen, "Hello World");
     
     // ============== end Setup VFD Screen ==============
-    
-    //Setup Buffer
-    char input_Buffer[1000] = 0;
-    int buffer_pointer = 0;
-    //end setup Buffer
 }
 
 int main() {    //main will need all setup functions, write UARTS, and sending signals 
