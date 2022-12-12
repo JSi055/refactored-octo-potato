@@ -3,15 +3,19 @@ import asyncio
 import serial
 import sqlite3
 
+import calibration as cal
+import database
+
 futures_complete_event = asyncio.Event()
 futures_lock = asyncio.Lock()
 
 last_future_id = 0
 futures = {}
 
-# TODO: Ugly global state. Put this in a class as it is state associated with that connection.
-
-# End ugly global state
+##### TODO: Ugly global state. Put this in a class as it is state associated with that connection.
+cal_curve_voltage = cal.CalCurve()
+cal_curve_voltage.points = [cal.Point(0, 0.0), cal.Point(2500, 4.410)]
+##### End ugly global state
 
 # TX and RX
 CMD_STATUS = b's' # print a status string
@@ -32,20 +36,40 @@ CMD_CALIBRATE = b'c' # calibrate voltage, current, or % (v, c, %) at points (1 t
                      # with decimal values X.X
 CMD_SET_LOAD = b'l'  # set the load in micro amps
 
-def getStatus(com: serial.Serial) -> asyncio.Future:
-    stuff = createCommandFuture(ord(CMD_STATUS))
+
+def get_status(com: serial.Serial) -> asyncio.Future:
+    stuff = create_command_future(ord(CMD_STATUS))
     com.write(CMD_STATUS) # send the status command
     return stuff[0]
 
-def handleStatus(com: serial.Serial):
+
+def trigger_test(com: serial.Serial):
+
+
+
+def handle_status(com: serial.Serial):
     status = com.readline() # read until a new-line char
-    completeCommandFuture(ord(CMD_STATUS), status)
+    complete_command_future(ord(CMD_STATUS), status)
 
-def handleVoltageStream(com: serial.Serial):
+
+def handle_voltage_stream(com: serial.Serial):
     raw_value = int.from_bytes(com.read(2), "big")
+    volt_value = cal_curve_voltage.x_to_y(raw_value)
+    database.putVoltage(volt_value)
 
 
-def completeCommandFuture(cmd_id: int, data: any):
+def handle_test(com: serial.Serial):
+    database.putTestComplete()
+    #TODO: update the traces in the graph!
+
+
+def handle_test_stream(com: serial.Serial):
+    raw_value = int.from_bytes(com.read(2), "big")
+    volt_value = cal_curve_voltage.x_to_y(raw_value)
+    database.putTestVoltage(volt_value)
+
+
+def complete_command_future(cmd_id: int, data: any):
     global futures
     global futures_lock
 
@@ -58,7 +82,7 @@ def completeCommandFuture(cmd_id: int, data: any):
     for future in cmd_futures:
         future.set_result(data)  # complete the future outside the lock as it will use it
 
-def createCommandFuture(cmd_id: int) -> (asyncio.Future, int):
+def create_command_future(cmd_id: int) -> (asyncio.Future, int):
     global last_future_id
     global futures
     global futures_lock
@@ -103,13 +127,13 @@ async def run_process_RX(com: serial.Serial):
         cmd_id = com.read()
 
         if cmd_id == CMD_STATUS:
-            handleStatus(com)
+            handle_status(com)
         elif cmd_id == CMD_VOLTAGE_STREAM:
-            handleVoltageStream(com)
+            handle_voltage_stream(com)
         elif cmd_id == CMD_TEST_STREAM:
-            handleTestStream(com)
+            handle_test_stream(com)
         elif cmd_id == CMD_TEST:
-            handleTest(com)
+            handle_test(com)
         else:
             # unknown command
             if cmd_id not in unknown_cmd_ids:

@@ -53,3 +53,7 @@ class CalCurve:
     @property
     def points(self):
         return self._points
+
+    @points.setter
+    def points(self, points):
+        self._points = points
