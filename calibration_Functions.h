@@ -11,9 +11,8 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-
-
-
+float x_to_y(Point points[], float x);
+float y_to_x(Point points[], float y);
 
 #ifdef	__cplusplus
 }

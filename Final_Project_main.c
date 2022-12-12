@@ -15,6 +15,7 @@
 #include "lonne025_delays_v002.h"
 #include "running_average.h"
 #include "Input_handler_Functions.h"
+#include "calibration_Functions.h"
 
 #pragma config ICS = PGx1          // Comm Channel Select (Emulator EMUC1/EMUD1 pins are shared with PGC1/PGD1)
 #pragma config FWDTEN = OFF        // Watchdog Timer Enable (Watchdog Timer is disabled)
@@ -94,7 +95,7 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
      
     if((U1RXREG && 0x80) == 0){         //will only occur when byte taken in meets condition of bit 7=0
                                         //which is the end of packet
-        switch(input_buffer[0]){   //determine what/if char is sent based on 1st char   
+        switch(input_buffer[read]){   //determine what/if char is sent based on 1st char   
             case 's':   //print status string
                 s_ptr{input_buffer[],front}; 
                 break;
@@ -120,9 +121,11 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
                 l_ptr(){input_buffer[],front}; 
                 break;
             default:
+                read++;
                 break;
             }
-        front = 0;  //sets write back to beginning for new command
+        front = 0;  //sets write back to beginning for new command to overwrite previous in buffer
+        read = 0;
     }
     
     // simple command reader    
@@ -160,15 +163,13 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
 void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
     _U1TXIF = 0;
     U1TXREG = ; 
-}
+
     // TODO: If data needs transmitting, take it out of the queue
     // and put it in the TX buffer. The queue should block if it is full,
     // so the main process may be waiting on us.
     
     // TODO: The queue put function should set _U1TXIF so we don't freeze
-    // TODO: If data needs streaming, put it in the TX buffer
-    
-    
+    // TODO: If data needs streaming, put it in the TX buffer    
 }
 
 void setup_debug() {
