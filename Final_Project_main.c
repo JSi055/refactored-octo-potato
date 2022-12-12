@@ -84,7 +84,10 @@ volatile uint16_t test_current_duty = 0;
 volatile uint16_t test_time;
 volatile uint16_t test_time_until; // save some multiplication ops
 
-volatile uint16_t test_buffer[512];
+#define TEST_BUFFER_SHIFT 9 // 1 << 9 = 512
+#define TEST_BUFFER_MASK ((1 << TEST_BUFFER_SHIFT) - 1)
+#define TEST_BUFFER_SIZE (1 << TEST_BUFFER_SHIFT)
+volatile uint16_t test_buffer[TEST_BUFFER_SIZE];
 volatile uint16_t test_buf_front = 0;
 volatile uint16_t test_buf_back = 0;
 
@@ -95,10 +98,17 @@ volatile uint16_t run_current_duty = 0;
 typedef int (*handler_ptr)(char*, int);
 
 #define INPUT_BUFFER_SIZE 64
-char input_buffer[INPUT_BUFFER_SIZE];
-uint8_t input_count = 0;
-uint8_t input_count_required = 0;
-handler_ptr current_handler;
+volatile char input_buffer[INPUT_BUFFER_SIZE];
+volatile uint8_t input_count = 0;
+volatile uint8_t input_count_required = 0;
+volatile handler_ptr current_handler;
+
+#define OUTPUT_BUFFER_SHIFT 6 // 1 << 6 = 64
+#define OUTPUT_BUFFER_MASK ((1 << OUTPUT_BUFFER_SHIFT) - 1)
+#define OUTPUT_BUFFER_SIZE (1 << OUTPUT_BUFFER_SHIFT)
+volatile char output_buffer[OUTPUT_BUFFER_SIZE];
+volatile uint8_t output_buf_front = 0;
+volatile uint8_t output_buf_back = 0;
 
 void uart_transmit(char* data, int len);
 
@@ -122,6 +132,7 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
 
 void putTestVoltage(uint16_t voltage) {
     test_buffer[test_buf_front++];
+    test_buf_front &= TEST_BUFFER_MASK; // avoid % to save cycles
     if (test_buf_front == test_buf_back) {
         // o no! buffer overflow!
         uart_transmit("eBuffer Overflow!\n", 18);
@@ -311,7 +322,7 @@ void setup() {
     // TODO: Current Sensing
     
     // initialize average thingys
-    exp_mov_create(&vbat_avg, 7); // 1 << 5 = 64
+    exp_mov_create(&vbat_avg, 6); // 1 << 6 = 64
     
     AD1CON1 = 0;
     AD1CON1bits.SSRC = 0b010;    // Timer3 - convert on compare
