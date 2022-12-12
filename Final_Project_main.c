@@ -31,9 +31,7 @@
                                        // Fail-Safe Clock Monitor is enabled)
 #pragma config FNOSC = FRCPLL      // Oscillator Select (Fast RC Oscillator with PLL module (FRCPLL))
 
-
 #define BAT_VOLTAGE_PIN 9 // AN9
-//test
 
 // Keeps a running average of the battery voltage. Maybe we can squeeze another
 // 2 bits of precision by averaging some noise.
@@ -44,6 +42,64 @@ average_moving_exponential vbat_avg;
 CUU_Interface screen_interface;
 Noritake_VFD_CUU screen;
 volatile uint16_t debug_profile;
+
+// no test is being done
+// normal current with CURRENT_CLUTCH_PIN low
+#define TEST_IDLE          0
+
+// Hold CURRENT_CLUTCH_PIN high,
+// Set PWM duty cycle up to test level!
+// (warm up the capacitor to ready the test current)
+// about 1s
+#define TEST_WARMUP        1
+
+// Capacitor is ready.
+// ======> capture some pre test voltage values.
+#define TEST_CAPTURE_PRE   2
+
+// Bring CURRENT_CLUTCH_PIN back to low to fire the current!
+// ======> capture test values!
+#define TEST_CAPTURE_PULSE 3
+
+// Hold CURRENT_CLUTCH_PIN high,
+// ======> capture post test values!
+#define TEST_CAPTURE_POST  4
+
+// Hold CURRENT_CLUTCH_PIN high,
+// Set PWM duty cycle back to normal
+// (allow capacitor to get back to normal)
+#define TEST_COOLDOWN      5
+
+#define CURRENT_CLUTCH_PIN LATAbits.LATA2
+#define CURRENT_PWM_PIN 4 // RP4 - note: hard coded elsewere
+
+// ##### TEST PULSE #####
+volatile char test_phase = TEST_IDLE;
+volatile uint32_t test_dur_us;
+volatile uint32_t test_pre_dur_us;
+volatile uint32_t test_post_dur_us;
+volatile uint16_t test_current_duty = 0;
+
+volatile uint16_t test_time;
+volatile uint16_t test_time_until; // save some multiplication ops
+
+volatile uint16_t test_buffer[512];
+volatile uint16_t test_buf_front = 0;
+volatile uint16_t test_buf_back = 0;
+
+// ##### Discharge Curve #####
+//volatile char stream_voltages = 0;
+volatile uint16_t run_current_duty = 0;
+
+typedef int (*handler_ptr)(char*, int);
+
+#define INPUT_BUFFER_SIZE 64
+char input_buffer[INPUT_BUFFER_SIZE];
+uint8_t input_count = 0;
+uint8_t input_count_required = 0;
+handler_ptr current_handler;
+
+void uart_transmit(char* data, int len);
 
 // with division: 3950 cycles with -O2 or -O3
 // with division: 4350 cycles with -O0
@@ -58,118 +114,161 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
     int offset = AD1CON2bits.BUFS ? 0 : 8;
     for (int i = offset; i < offset + 8; i++) {
         // ADC1BUF (0 through 15) are consecutive in memory
-        
-        if (vbat_avg.count < 1 << vbat_avg.setpoint) {
-            // accumulate more values until the setpoint is reached
-            vbat_avg.count++;
-        } else {
-            // remove a value from the sum to make space for the new one
-            vbat_avg.sum -= vbat_avg.sum >> vbat_avg.setpoint;
-        }
-        // add 1 to purity or stay at max
-        // a purity higher than the setpoint
-        // uniqueness = 1 - e^-(purity/count)
-        // when purity == setpoint, we have roughly %63 uniqueness
-        vbat_avg.purity += vbat_avg.purity == 0xFFFF ? 0 : 1;
-        // add the new value to the sum
-        vbat_avg.sum += (&ADC1BUF0)[i];
+        exp_mov_put(&vbat_avg, (&ADC1BUF0)[i]);
     }
     debug_profile = TMR1 - debug_profile; // DEBUG
 }
 
+void putTestVoltage(uint16_t voltage) {
+    test_buffer[test_buf_front++];
+    if (test_buf_front == test_buf_back) {
+        // o no! buffer overflow!
+        uart_transmit("eBuffer Overflow!\n", 18);
+    }
+}
 
-void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
-    _U1RXIF = 0;   
-    
-   // TODO: Read the first byte to know the packet type. Start building
-    // the packet. Once the packet is complete, process it with its handler function.
-    // 
-    //struct { char type; char (*handler_ptr)(char* buffer, char len) }
-    //The handler will read the current buffer and return the number of bytes
-    // to buffer before the next call. If bit 7 is set, the buffer is consumed.
-    // If the return value is 0, the packet is complete and the next byte is another
-    // command.
-    
-    input_buffer[front++] = U1RXREG;    //add new byte to a buffer
-     
-    if((U1RXREG && 0x80) == 0){         //will only occur when byte taken in meets condition of bit 7=0
-                                        //which is the end of packet
-        switch(input_buffer[0]){   //determine what/if char is sent based on 1st char   
-            case 's':   //print status string
-                s_ptr{input_buffer[],front}; 
-                break;
-            case 'T':   //test pulse
-                T_ptr{input_buffer[],front}; 
-                break;
-            case 'f':    //voltage stream on/off
-                f_ptr(){input_buffer[],front}; 
-                break;
-            case 'D':    //dump data
-                D_ptr(){input_buffer[],front}; 
-                break;
-            case 'v':    //voltage stream packets
-                v_ptr(){input_buffer[],front}; 
-                break;
-            case 't':    //conduct test
-                t_ptr(){input_buffer[],front}; 
-                break;
-            case 'c':   //calibrate voltage or current
-                c_ptr(){input_buffer[],front}; 
-                break;
-             case 'l':   //set load in micro amps
-                l_ptr(){input_buffer[],front}; 
-                break;
-            default:
-                break;
+// test phase interrupt. TODO: priorities
+void __attribute__((interrupt, auto_psv)) _T4Interrupt() {
+    _T4IF = 0;
+    switch (test_phase) {
+        case TEST_WARMUP:
+            test_phase = TEST_CAPTURE_PRE;
+            T4CONbits.TON = 0;
+            T4CONbits.TCKPS = 0b10; // 64x pre-scale, 4us at 16M clock
+            TMR4 = 0;
+            // sample every vbat_avg setpoint has passed
+            // PR4 = 140 * 64 / 64
+            PR4 = ((uint32_t)PR3 << vbat_avg.setpoint) >> 5;
+            test_time = 0;
+            test_time_until = (test_pre_dur_us >> 2) / PR4;
+            
+            T4CONbits.TON = 1;
+            
+            break;
+        case TEST_CAPTURE_PRE:
+            putTestVoltage(exp_mov_fetch(&vbat_avg).val);
+            
+            if (++test_time > test_time_until) {
+                test_phase = TEST_CAPTURE_PULSE;
+                test_time = 0;
+                test_time_until = (test_dur_us >> 2) / PR4;
+                CURRENT_CLUTCH_PIN = 0; // DO THE PULSE!
             }
-        front = 0;  //sets write back to beginning for new command
-    }
-    
-    // simple command reader    
-    while (U1STAbits.URXDA) { // while there is stuff in the RX buffer...
-        TRISAbits.TRISA4 = 0; // 100 Ohm
-        TRISBbits.TRISB4 = 0; // 500 Ohm
-        TRISAbits.TRISA3 = 0; // 2000 Ohm
-        uint8_t val = U1RXREG;
-        U1TXREG = val; // ECHO TEST
-        switch(val) {
-            case '1': // 100 Ohm
-                LATAbits.LATA4 = 1;
-                break;
-            case '2': // 500 Ohm
-                LATBbits.LATB4 = 1;
-                break;
-            case '3': // 2000 Ohm
-                LATAbits.LATA3 = 1;
-                break;
-            case '4': // 100 Ohm off
-                LATAbits.LATA4 = 0;
-                break;
-            case '5': // 500 Ohm off
-                LATBbits.LATB4 = 0;
-                break;
-            case '6': // 2000 Ohm off
-                LATAbits.LATA3 = 0;
-                break;
-            default: // unknown command
-                break;
-        }
+            break;
+        case TEST_CAPTURE_PULSE:
+            putTestVoltage(exp_mov_fetch(&vbat_avg).val);
+            
+            if (++test_time > test_time_until) {
+                CURRENT_CLUTCH_PIN = 1; // END THE PULSE!
+                test_phase = TEST_CAPTURE_POST;
+                test_time = 0;
+                test_time_until = (test_post_dur_us >> 2) / PR4;
+            }
+            break;
+        case TEST_CAPTURE_POST:
+            putTestVoltage(exp_mov_fetch(&vbat_avg).val);
+            
+            if (++test_time > test_time_until) {
+                test_phase = TEST_COOLDOWN;
+                T4CONbits.TON = 0;
+                
+                setCurrent(run_current_duty);
+                
+                T4CONbits.TCKPS = 0b11; // 256x pre-scale
+                PR4 = 62500; // 1 second cooldown
+                TMR4 = 0;
+                T4CONbits.TON = 1;
+            }
+            break;
+        case TEST_COOLDOWN:
+            T4CONbits.TON = 0;
+            _T1IE = 0;
+            
+            CURRENT_CLUTCH_PIN = 0; // return to normal discharge curve
+            uart_transmit("T", 1);
+            
+            test_phase = TEST_IDLE;
+            break;
+        default:
+            uart_transmit("e1\n", 3);
     }
 }
 
-void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
-    _U1TXIF = 0;
-    U1TXREG = ; 
+
+void startTest() {
+    CURRENT_CLUTCH_PIN = 1;
+    setCurrent(test_current_duty);
+    test_phase = TEST_WARMUP;
+    
+    T4CON = 0;
+    _T4IF = 0;
+    _T4IE = 1;
+    T4CONbits.TCKPS = 0b11; // 256x pre-scale
+    PR4 = 62500; // 1 second warmup
+    TMR4 = 0;
+    T4CONbits.TON = 1;
 }
-    // TODO: If data needs transmitting, take it out of the queue
-    // and put it in the TX buffer. The queue should block if it is full,
-    // so the main process may be waiting on us.
-    
-    // TODO: The queue put function should set _U1TXIF so we don't freeze
-    // TODO: If data needs streaming, put it in the TX buffer
-    
-    
+
+/**
+ * Sets the current (effective when CURRENT_CLUTCH_PIN is low)
+ * @param duty 0 to MAX_CURRENT
+ */
+void setCurrent(int duty) {
+    // the voltage divider is 1k / (1k + 20k)
+    // that voltage will be made across a 100 ohm resistor to create the current
+    OC1RS = duty;
 }
+
+uint32_t bigbytesToInt32(char* data) {
+    return (uint32_t)data[3] << 24
+         | (uint32_t)data[2] << 16
+         | (uint32_t)data[1] << 8
+         | (uint32_t)data[0] << 0;
+}
+
+uint16_t bigbytesToInt16(char* data) {
+    return (uint16_t)data[1] << 8
+         | (uint16_t)data[0] << 0;
+}
+
+int handle_test(char* data, int len){
+    // wait until we have enough bytes
+    if (len < 14) {
+        return 14;
+    }
+    
+    if(test_phase == TEST_IDLE) {
+        // use network byte order
+        test_dur_us     = bigbytesToInt32(&data[0]);
+        test_pre_dur_us = bigbytesToInt32(&data[4]);
+        test_post_dur_us = bigbytesToInt32(&data[8]);
+        test_current_duty = bigbytesToInt16(&data[12]);
+        
+        startTest();
+    }
+
+    return CMD_END;
+}
+
+int handle_status(char* data, int len){
+    uart_transmit("TODO: status\n", 13);
+    
+    return CMD_END;
+}
+
+int handle_load(char* data, int len) {
+    // wait until we have enough bytes
+    if (len < 2) {
+        return 2;
+    }
+    
+    run_current_duty = bigbytesToInt16(&data[0]);
+    if (test_phase == TEST_IDLE) {
+        setCurrent(run_current_duty);
+    }
+    return CMD_END;
+}
+
 
 void setup_debug() {
     // We have _ADC1Interrupt taking too long! profile it!
@@ -214,7 +313,7 @@ void setup() {
     exp_mov_create(&vbat_avg, 7); // 1 << 5 = 64
     
     AD1CON1 = 0;
-    AD1CON1bits.SSRC = 0b010;    // Timer3 - sample on compare
+    AD1CON1bits.SSRC = 0b010;    // Timer3 - convert on compare
     AD1CON1bits.ASAM = 1;        // Turn on auto-sample after conversion.
     // AD1CON1bits.FORM = 0b00;  // integer format (0 - 1023)
     
@@ -226,7 +325,7 @@ void setup() {
     AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
     //AD1CON2bits.VCFG = 0b011; // External reference voltages (trying this to reduce noise)
     
-    // sample and convert cycles = (12 + SAMC) * ADCS = (12 + 10) * 2 = 44
+    // sample and convert cycles = (12 + SAMC) * ADCS, if SAMC is used (ITS NOT)
     AD1CON3bits.ADCS = (3-1); // 3 x Tcy = 187.2ns
     //AD1CON3bits.SAMC = 31; // Using Timer3 instead
     
@@ -247,6 +346,40 @@ void setup() {
     T3CONbits.TON = 1; // turn on the timber
     AD1CON1bits.ADON = 1; // start the analog to digital converter
     // ============== end Setup ADC ==============
+    
+    
+    // ============== Setup Current PWM ==============
+    // note: our time constant 1ms (16000 cycles)
+    // using 256 cycles, e^(-(256*62.5*10^-9)/0.001) = 0.984
+    // Get Timer2 ready, but don't start it yet.
+    T2CON = 0;   // clear T3CON (should be clear by default)
+    T2CONbits.TCKPS = 0; // 1x pre-scale
+    PR2 = 256;
+    
+    CURRENT_CLUTCH_PIN = 0;
+    TRISAbits.TRISA2 = 0;   // Switch current clutch pin to output mode
+    
+    // Setup Output Compare 1
+    
+    // clear OC1CON (clear by default, but lets do it anyway)
+    OC1CON = 0;
+    
+    // MUST DO THIS WHILE OCM is still 000!!! Else, OC1R will be frozen and
+    // does not even copy from OC1RS! (found this out the hard way)
+    // use setServo() to set OC1RS for us
+    setCurrent(0);
+    OC1R = OC1RS;
+    
+    OC1CONbits.OCTSEL = 0;      // Tell OC1 to use T2 timer. 1 would be T3.
+    OC1CONbits.OCM    = 0b110;  // Set OC1 to PWM mode
+    
+    // Connect RP OC1
+    __builtin_write_OSCCONL(OSCCON & 0xBF); // unlock
+    RPOR2bits.RP4R = 18;                    // OC1 (id 18) ===> RP4
+    __builtin_write_OSCCONL(OSCCON | 0x40); // lock
+    
+    T2CONbits.TON = 1;          // Enable the T2 timer!
+    // ============ end Setup Current PWM ============
     
     
     // ================ Setup UART ================
@@ -286,6 +419,7 @@ void setup() {
     // ================ Setup VFD Screen ================
     //  (Initialize the Noritake itron CU16025ECPB-U5J
     //   VFD display. Note: this setup uses delays)
+    waitMS(250); // wait for the screen to power on
     
     CUU_M68_4_create(&screen_interface);
     screen_interface.RS_PIN = 0x15;
@@ -353,4 +487,70 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         CUU_print_uint(&screen, debug_profile, 10);
         CUU_print_str(&screen, "  ");
     }
+}
+
+// ####### \/ UART STUFF DOWN HERE \/ ########
+
+int handle_unknown(char* data, int len) {
+    uart_transmit("ec\n");
+    return CMD_END;
+}
+
+handler_ptr uart_get_handler(char cmd_id) {
+    switch (cmd_id) {
+        case 's':
+            return handle_status;
+        case 'T':
+            return handle_test;
+        case 'l':
+            return handle_load;
+        default:
+            return handle_unknown;
+    }
+}
+
+void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
+    _U1RXIF = 0;
+    
+    while (U1STAbits.URXDA) { // while there is stuff in the RX buffer...
+        uint8_t val = U1RXREG;
+        
+        if (current_handler) {
+            input_buffer[input_count++] = val;
+        } else {
+            current_handler = uart_get_handler(val);
+            input_count = 0;
+            input_count_required = 0;
+        }
+        
+        if (input_count >= input_count_required) {
+            int result = current_handler(input_buffer, input_count);
+            if (result > 0) {
+                // keep buffering
+                input_count_required = result;
+            } else {
+                if (result < 0) {
+                    input_count_required = -result;
+                } else {
+                    current_handler = NULL;
+                }
+                // buffer consumed
+                input_count = 0;
+            }
+        }
+    }
+}
+
+void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
+    _U1TXIF = 0;
+    U1TXREG = ;
+    
+    // TODO: If data needs transmitting, take it out of the queue
+    // and put it in the TX buffer. The queue should block if it is full,
+    // so the main process may be waiting on us.
+    
+    // TODO: The queue put function should set _U1TXIF so we don't freeze
+    // TODO: If data needs streaming, put it in the TX buffer
+    
+    
 }

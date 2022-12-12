@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=Final_Project_main.c lonne025_delays_v002.s CUU_M68_4bit_ported.c Fake_Arduino.c Noritake_VFD_CUU_ported.c running_average.c
+SOURCEFILES_QUOTED_IF_SPACED=Final_Project_main.c lonne025_delays_v002.s CUU_M68_4bit_ported.c Fake_Arduino.c Noritake_VFD_CUU_ported.c running_average.c Input_handler_Functions.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/Final_Project_main.o ${OBJECTDIR}/lonne025_delays_v002.o ${OBJECTDIR}/CUU_M68_4bit_ported.o ${OBJECTDIR}/Fake_Arduino.o ${OBJECTDIR}/Noritake_VFD_CUU_ported.o ${OBJECTDIR}/running_average.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/Final_Project_main.o.d ${OBJECTDIR}/lonne025_delays_v002.o.d ${OBJECTDIR}/CUU_M68_4bit_ported.o.d ${OBJECTDIR}/Fake_Arduino.o.d ${OBJECTDIR}/Noritake_VFD_CUU_ported.o.d ${OBJECTDIR}/running_average.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/Final_Project_main.o ${OBJECTDIR}/lonne025_delays_v002.o ${OBJECTDIR}/CUU_M68_4bit_ported.o ${OBJECTDIR}/Fake_Arduino.o ${OBJECTDIR}/Noritake_VFD_CUU_ported.o ${OBJECTDIR}/running_average.o ${OBJECTDIR}/Input_handler_Functions.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/Final_Project_main.o.d ${OBJECTDIR}/lonne025_delays_v002.o.d ${OBJECTDIR}/CUU_M68_4bit_ported.o.d ${OBJECTDIR}/Fake_Arduino.o.d ${OBJECTDIR}/Noritake_VFD_CUU_ported.o.d ${OBJECTDIR}/running_average.o.d ${OBJECTDIR}/Input_handler_Functions.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/Final_Project_main.o ${OBJECTDIR}/lonne025_delays_v002.o ${OBJECTDIR}/CUU_M68_4bit_ported.o ${OBJECTDIR}/Fake_Arduino.o ${OBJECTDIR}/Noritake_VFD_CUU_ported.o ${OBJECTDIR}/running_average.o
+OBJECTFILES=${OBJECTDIR}/Final_Project_main.o ${OBJECTDIR}/lonne025_delays_v002.o ${OBJECTDIR}/CUU_M68_4bit_ported.o ${OBJECTDIR}/Fake_Arduino.o ${OBJECTDIR}/Noritake_VFD_CUU_ported.o ${OBJECTDIR}/running_average.o ${OBJECTDIR}/Input_handler_Functions.o
 
 # Source Files
-SOURCEFILES=Final_Project_main.c lonne025_delays_v002.s CUU_M68_4bit_ported.c Fake_Arduino.c Noritake_VFD_CUU_ported.c running_average.c
+SOURCEFILES=Final_Project_main.c lonne025_delays_v002.s CUU_M68_4bit_ported.c Fake_Arduino.c Noritake_VFD_CUU_ported.c running_average.c Input_handler_Functions.c
 
 
 
@@ -125,6 +125,12 @@ ${OBJECTDIR}/running_average.o: running_average.c  .generated_files/flags/defaul
 	@${RM} ${OBJECTDIR}/running_average.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  running_average.c  -o ${OBJECTDIR}/running_average.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/running_average.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
+${OBJECTDIR}/Input_handler_Functions.o: Input_handler_Functions.c  .generated_files/flags/default/67a66e772e57dc8253ad2d9fac367c94e2f12018 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/Input_handler_Functions.o.d 
+	@${RM} ${OBJECTDIR}/Input_handler_Functions.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  Input_handler_Functions.c  -o ${OBJECTDIR}/Input_handler_Functions.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Input_handler_Functions.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
 else
 ${OBJECTDIR}/Final_Project_main.o: Final_Project_main.c  .generated_files/flags/default/3735b2cb5aba5f86ee66cbbdfd2e5c8625e2a371 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
 	@${MKDIR} "${OBJECTDIR}" 
@@ -155,6 +161,12 @@ ${OBJECTDIR}/running_average.o: running_average.c  .generated_files/flags/defaul
 	@${RM} ${OBJECTDIR}/running_average.o.d 
 	@${RM} ${OBJECTDIR}/running_average.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  running_average.c  -o ${OBJECTDIR}/running_average.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/running_average.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/Input_handler_Functions.o: Input_handler_Functions.c  .generated_files/flags/default/34e179259af4583f1104da1ac76a1435ed177856 .generated_files/flags/default/ab79f85e8b884ca16bf55aa7d0cf27f9007bd660
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/Input_handler_Functions.o.d 
+	@${RM} ${OBJECTDIR}/Input_handler_Functions.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  Input_handler_Functions.c  -o ${OBJECTDIR}/Input_handler_Functions.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/Input_handler_Functions.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)    $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
 endif
 

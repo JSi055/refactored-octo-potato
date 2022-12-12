@@ -23,6 +23,8 @@
       <itemPath>Noritake_VFD_CUU_ported.h</itemPath>
       <itemPath>running_average.h</itemPath>
       <itemPath>running_average.c</itemPath>
+      <itemPath>Input_handler_Functions.c</itemPath>
+      <itemPath>Input_handler_Functions.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

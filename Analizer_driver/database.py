@@ -24,7 +24,8 @@ def loadDatabase(dbFile):
                     "    time integer, "
                     "    pre_dur_us integer, "
                     "    dur_us integer, "
-                    "    post_dur_us integer"
+                    "    post_dur_us integer, "
+                    "    current float"
                     ")")
     sql_con.commit()
 
@@ -37,17 +38,18 @@ def resetVoltageTime():
     start_time_seconds = round(time.time())
 
 
-def putStartTest(dur_us: int, pre_dur_us: int, post_dur_us: int):
+def putStartTest(dur_us: int, pre_dur_us: int, post_dur_us: int, current: float):
     global test_id
     test_id += 1
 
     sql_cur.execute("INSERT INTO pulseMetadata"
-                    "(pulseid, time, dur_us, pre_dur_us, post_dur_us) VALUES ("
+                    "(pulseid, time, dur_us, pre_dur_us, post_dur_us, current) VALUES ("
                     + str(test_id) + ", "
                     + str(round(time.time())) + ", "
                     + str(dur_us) + ", "
                     + str(pre_dur_us) + ", "
-                    + str(post_dur_us) + ")")
+                    + str(post_dur_us) + ", "
+                    + str(current) + ")")
     sql_con.commit()
 
 

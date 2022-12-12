@@ -34,7 +34,7 @@ class CalCurve:
         return ((x - point1.x) * (point2.y - point1.y)) / (point2.x - point1.x) + point1.y
 
     # FIXME: it is assumed that y is increasing each point!
-    def y_to_x(self, y) -> float:
+    def y_to_x(self, y) -> int:
         if len(self.points) < 2:
             return 0 # unknown slope. we need at least 2 points!
         point1: Point = self.points[0]

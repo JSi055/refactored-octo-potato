@@ -15,6 +15,8 @@ futures = {}
 ##### TODO: Ugly global state. Put this in a class as it is state associated with that connection.
 cal_curve_voltage = cal.CalCurve()
 cal_curve_voltage.points = [cal.Point(0, 0.0), cal.Point(2500, 4.410)]
+cal_curve_current = cal.CalCurve()
+cal_curve_current.points = [cal.Point(0, 0.0), cal.Point(255, 14.286)] # FIXME: this is calculated
 ##### End ugly global state
 
 # TX and RX
@@ -29,7 +31,8 @@ CMD_DUMP_CAL = b'D' # dump the calibration data so it can be hard coded
 
 # RX
 CMD_VOLTAGE_STREAM = b'v' # voltage stream packets (raw, uncalibrated)
-CMD_TEST_STREAM = b't'    # conduct a test
+CMD_TEST_STREAM = b't'    # voltage test stream packets (raw, uncalibrated)
+CMD_ERROR = b'e'          # error string ending in \n
 
 # TX
 CMD_CALIBRATE = b'c' # calibrate voltage, current, or % (v, c, %) at points (1 through 4).
@@ -43,13 +46,28 @@ def get_status(com: serial.Serial) -> asyncio.Future:
     return stuff[0]
 
 
-def trigger_test(com: serial.Serial):
+def trigger_test(com: serial.Serial, dur_us: int, pre_dur_us: int, post_dur_us: int, current: float) -> asyncio.Future:
+    stuff = create_command_future(ord(CMD_STATUS))
+    database.putStartTest(dur_us, pre_dur_us, post_dur_us, current);
+    com.write(b"T"
+              + int.to_bytes(dur_us, 4, "big")
+              + int.to_bytes(pre_dur_us, 4, "big")
+              + int.to_bytes(post_dur_us, 4, "big")
+              + int.to_bytes(cal_curve_current.y_to_x(current), 2, "big"))
+    return stuff[0]
 
+
+def set_load(com: serial.Serial, current: float):
+    com.write(b"l" + cal_curve_current.y_to_x(current).to_bytes(2, "big"))
 
 
 def handle_status(com: serial.Serial):
     status = com.readline() # read until a new-line char
     complete_command_future(ord(CMD_STATUS), status)
+
+
+def handle_error(com: serial.Serial):
+    print("DEVICE ERROR: " + str(com.readline())) # read until a new-line char
 
 
 def handle_voltage_stream(com: serial.Serial):
@@ -122,12 +140,15 @@ def create_command_future(cmd_id: int) -> (asyncio.Future, int):
 
 unknown_cmd_ids = {}
 
-async def run_process_RX(com: serial.Serial):
+
+async def run_process_rx(com: serial.Serial):
     while com.is_open():
         cmd_id = com.read()
 
         if cmd_id == CMD_STATUS:
             handle_status(com)
+        elif cmd_id == CMD_ERROR:
+            handle_error(com)
         elif cmd_id == CMD_VOLTAGE_STREAM:
             handle_voltage_stream(com)
         elif cmd_id == CMD_TEST_STREAM:
