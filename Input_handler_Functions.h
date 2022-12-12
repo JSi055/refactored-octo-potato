@@ -15,6 +15,8 @@ extern "C" {
 #define CMD_END 0
 #define CMD_CONSUMED_BUF -1
 
+// scrap code
+/*
 struct cmd {char cmd_type; 
             int (*handler_ptr)(char* buffer, int len); };
 
@@ -26,7 +28,7 @@ void (*v_ptr)(char input_buffer[], int length) = stream_handler;
 void (*t_ptr)(char input_buffer[], int length) = test_handler;
 void (*c_ptr)(char input_buffer[], int length) = calibration_handler;
 void (*l_ptr)(char input_buffer[], int length) = load_handler;
-
+*/
 
 #ifdef	__cplusplus
 }
