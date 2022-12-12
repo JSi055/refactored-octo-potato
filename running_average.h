@@ -29,6 +29,9 @@ typedef struct exp_mov_average_struct {
     uint16_t setpoint;
     // The humber of values we have received sense the last fetch operation.
     uint16_t purity;
+    
+    uint16_t anti_flicker_val;
+    uint8_t overPrecision;
 } average_moving_exponential;
 
 /**
@@ -45,7 +48,7 @@ typedef struct avg_fetch_struct {
  * @param moving The average_moving_exponential to initialize
  * @param setpoint The number of values that make up about 63% of the average.
  */
-void exp_mov_create(average_moving_exponential* moving, uint16_t setpoint);
+void exp_mov_create(average_moving_exponential* moving, uint16_t setpoint, uint8_t overPrecision);
 
 /**
  * Add a value to the moving average.
@@ -72,14 +75,14 @@ static inline void exp_mov_put(average_moving_exponential* moving, uint16_t valu
  * An overPrecision > 1 allows more precision to be squeezed out than the
  * values put into the average.
  */
-uint16_t exp_mov_poll(average_moving_exponential* moving, uint8_t overPrecision);
+uint16_t exp_mov_poll(average_moving_exponential* moving);
 
 /**
  * Fetch the current average value and purity.
  * An overPrecision > 1 allows more precision to be squeezed out than the
  * values put into the average.
  */
-avg_fetch exp_mov_fetch(average_moving_exponential* moving, uint8_t overPrecision);
+avg_fetch exp_mov_fetch(average_moving_exponential* moving);
 
 /**
  * Update's the setpoint

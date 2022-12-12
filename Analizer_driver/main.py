@@ -89,16 +89,16 @@ async def main():
     port = '/dev/ttyUSB0'
     baud = 115200
     if len(sys.argv) > 0:
-        port = sys.argv[1]
+        port = sys.argv[0]
 
     #############################
     # magical mystery code from https://stackoverflow.com/questions/15460865/disable-dtr-in-pyserial-from-code
     # somehow makes it so DTR does *not* get pulled low when opening the connection
-    f = open(port)
-    attrs = termios.tcgetattr(f)
-    attrs[2] = attrs[2] & ~termios.HUPCL
-    termios.tcsetattr(f, termios.TCSAFLUSH, attrs)
-    f.close()
+    #f = open(port)
+    #attrs = termios.tcgetattr(f)
+    #attrs[2] = attrs[2] & ~termios.HUPCL
+    #termios.tcsetattr(f, termios.TCSAFLUSH, attrs)
+    #f.close()
     #############################
 
     com = serial.Serial()

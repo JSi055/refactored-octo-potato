@@ -91,10 +91,12 @@ volatile uint16_t test_buffer[TEST_BUFFER_SIZE];
 volatile uint16_t test_buf_front = 0;
 volatile uint16_t test_buf_back = 0;
 
-// ##### Discharge Curve #####
+// ##### Discharge Curve & Status #####
 //volatile char stream_voltages = 0;
 volatile uint16_t run_current_duty = 0;
+volatile uint16_t last_purity = 0;
 
+// ##### UART #####
 typedef int (*handler_ptr)(char*, int);
 
 #define INPUT_BUFFER_SIZE 64
@@ -109,8 +111,10 @@ volatile handler_ptr current_handler;
 volatile char output_buffer[OUTPUT_BUFFER_SIZE];
 volatile uint8_t output_buf_front = 0;
 volatile uint8_t output_buf_back = 0;
+volatile uint8_t output_buf_lock = 0;
 
 void uart_transmit(char* data, int len);
+void setCurrent(int duty);
 
 // with division: 3950 cycles with -O2 or -O3
 // with division: 4350 cycles with -O0
@@ -322,7 +326,7 @@ void setup() {
     // TODO: Current Sensing
     
     // initialize average thingys
-    exp_mov_create(&vbat_avg, 6); // 1 << 6 = 64
+    exp_mov_create(&vbat_avg, 6, 2); // 1 << 6 = 64, 2 bits overprecission
     
     AD1CON1 = 0;
     AD1CON1bits.SSRC = 0b010;    // Timer3 - convert on compare
@@ -420,7 +424,8 @@ void setup() {
     
     _U1TXIF = 0;
     _U1RXIF = 0;
-    IEC0bits.U1TXIE = 1; //optional  interrupts
+    IEC0bits.U1TXIE = 1; // enable interrupts
+    _U1TXIP = 5; // give TX a higher priority so we don't have a race condition
     IEC0bits.U1RXIE = 1;
 
     U1MODEbits.UARTEN = 1;  // enable U1 UART
@@ -457,8 +462,6 @@ void setup() {
 int main() {    //main will need all setup functions, write UARTS, and sending signals 
     setup();
     
-    uint16_t anti_flicker_last_val = 0;
-    
     while(1){
         /*LATBbits.LATB6 = 1;
         LATBbits.LATB6 = 0;
@@ -469,6 +472,7 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         
         //waitMS(20);
         
+        /* Scrap code
         // CALIBRATION POINTS (at Tom's home, Nov 26, with BM786):
         // 5610 ==> 3.2880v
         
@@ -480,16 +484,13 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
                                           //need more info on points for greater detail
                                           //also decimal points not fully accounted for yet
         U1TXREG or quene[] = voltage; //depends if direct send or put into quene for interrupt here
+        */
         
         CUU_setCursor_2d(&screen, 0, 0);
         CUU_print_str(&screen, "v: ");
-        avg_fetch avg = exp_mov_fetch(&vbat_avg, 8);
-        int16_t diff = anti_flicker_last_val - avg.val;
-        if (diff > 1 || diff < -1) {
-            anti_flicker_last_val = avg.val;
-        }
+        avg_fetch avg = exp_mov_fetch(&vbat_avg);
         
-        CUU_print_uint(&screen, anti_flicker_last_val >> 1, 10);
+        CUU_print_uint(&screen, avg.val >> 1, 10);
         CUU_print_str(&screen, " p: ");
         CUU_print_uint(&screen, avg.purity, 10);
         CUU_print_str(&screen, "  ");
@@ -504,7 +505,7 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
 // ####### \/ UART STUFF DOWN HERE \/ ########
 
 int handle_unknown(char* data, int len) {
-    uart_transmit("ec\n");
+    uart_transmit("ec\n", 3);
     return CMD_END;
 }
 
@@ -553,16 +554,50 @@ void __attribute__((interrupt, auto_psv)) _U1RXInterrupt() {
     }
 }
 
+void uart_transmit(char* data, int len) {
+    output_buf_lock = 1;
+    for (int i = 0; i < len; i++) {
+        output_buffer[output_buf_front++] = data[i];
+        output_buf_front &= OUTPUT_BUFFER_MASK;
+        if (output_buf_front == output_buf_back) {
+            uart_transmit("et\n", 3);
+        }
+    }
+    output_buf_lock = 0;
+    // extra check out here incase a race _U1TXInterrupt() had to abort
+    if (U1STAbits.UTXBF) _U1TXIF = 1;
+}
+
+// TX buffer is empty according to uart setup
 void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
     _U1TXIF = 0;
-    U1TXREG = ;
     
-    // TODO: If data needs transmitting, take it out of the queue
-    // and put it in the TX buffer. The queue should block if it is full,
-    // so the main process may be waiting on us.
-    
-    // TODO: The queue put function should set _U1TXIF so we don't freeze
-    // TODO: If data needs streaming, put it in the TX buffer
-    
-    
+    while (!U1STAbits.UTXBF) {
+        if (output_buf_back != output_buf_front) {
+            // take from the buffer
+            U1TXREG = output_buffer[output_buf_back++];
+            output_buf_back &= OUTPUT_BUFFER_MASK;
+        } else {
+            // we empty! dump some data into the buffer and re-loop!
+            if (output_buf_lock) {
+                return; // race condition! abort!
+            }
+            
+            uint16_t bigEndian;
+            if (test_buf_back != test_buf_front) {
+                U1TXREG = 't'; // put it in the buffer early to buy some time
+                bigEndian = test_buffer[test_buf_back++];
+                test_buf_back &= TEST_BUFFER_MASK;
+                bigEndian = (bigEndian >> 8) | (bigEndian << 8);
+                uart_transmit((char*) &bigEndian, 2);
+            } else {
+                U1TXREG = 'v'; // put = exp_mov_fetch(&vbat_avg); it in the buffer early to buy some time
+                avg_fetch avg = exp_mov_fetch(&vbat_avg); 
+                bigEndian = avg.val;
+                last_purity = avg.purity;
+                bigEndian = (bigEndian >> 8) | (bigEndian << 8);
+                uart_transmit((char*) &bigEndian, 2);
+            }
+        }
+    }
 }
