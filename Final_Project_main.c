@@ -32,7 +32,7 @@
                                        // Fail-Safe Clock Monitor is enabled)
 #pragma config FNOSC = FRCPLL      // Oscillator Select (Fast RC Oscillator with PLL module (FRCPLL))
 
-#define BAT_VOLTAGE_PIN 9 // AN9
+#define BAT_VOLTAGE_PIN 10 // AN10
 
 // Keeps a running average of the battery voltage. Maybe we can squeeze another
 // 2 bits of precision by averaging some noise.
@@ -74,6 +74,8 @@ volatile uint16_t debug_profile;
 #define CURRENT_CLUTCH_PIN LATAbits.LATA2
 #define CURRENT_PWM_PIN 4 // RP4 - note: hard coded elsewere
 
+#define PURITY_THRESHOLD 500
+
 // ##### TEST PULSE #####
 volatile char test_phase = TEST_IDLE;
 volatile uint32_t test_dur_us;
@@ -92,9 +94,11 @@ volatile uint16_t test_buf_front = 0;
 volatile uint16_t test_buf_back = 0;
 
 // ##### Discharge Curve & Status #####
-//volatile char stream_voltages = 0;
+#define CFG_STREAM_VOLTAGES = 0x01
+#define CFG_STREAM_AUTOMATIC = 0x02
 volatile uint16_t run_current_duty = 0;
 volatile uint16_t last_purity = 0;
+volatile uint8_t config_flags = 0;
 
 // ##### UART #####
 typedef int (*handler_ptr)(char*, int);
@@ -131,16 +135,28 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
         // ADC1BUF (0 through 15) are consecutive in memory
         exp_mov_put(&vbat_avg, (&ADC1BUF0)[i]);
     }
+#if PURITY_THRESHOLD != 0
+    if (vbat_avg.purity > PURITY_THRESHOLD) {
+        _U1TXIF = 1; // TODO: this is just a quick fix
+    }
+#endif
     debug_profile = TMR1 - debug_profile; // DEBUG
 }
 
-void putTestVoltage(uint16_t voltage) {
-    test_buffer[test_buf_front++];
+void putTestVoltage() {
+    avg_fetch vtest = exp_mov_fetch(&vbat_avg);
+    last_purity = vtest.purity;
+    test_buffer[test_buf_front++] = vtest.val;
     test_buf_front &= TEST_BUFFER_MASK; // avoid % to save cycles
     if (test_buf_front == test_buf_back) {
         // o no! buffer overflow!
         uart_transmit("eBuffer Overflow!\n", 18);
     }
+    
+    // if there was a flag to see if the transmit buffer was empty.
+    // we would use it. U1STAbits.UTXBF just says there is one space
+    // (almost always true, so save some cycles by not checking)
+    _U1TXIF = 1; // kick start the transmitter. 
 }
 
 // test phase interrupt. TODO: priorities
@@ -162,7 +178,7 @@ void __attribute__((interrupt, auto_psv)) _T4Interrupt() {
             
             break;
         case TEST_CAPTURE_PRE:
-            putTestVoltage(exp_mov_fetch(&vbat_avg).val);
+            putTestVoltage();
             
             if (++test_time > test_time_until) {
                 test_phase = TEST_CAPTURE_PULSE;
@@ -172,7 +188,7 @@ void __attribute__((interrupt, auto_psv)) _T4Interrupt() {
             }
             break;
         case TEST_CAPTURE_PULSE:
-            putTestVoltage(exp_mov_fetch(&vbat_avg).val);
+            putTestVoltage();
             
             if (++test_time > test_time_until) {
                 CURRENT_CLUTCH_PIN = 1; // END THE PULSE!
@@ -182,7 +198,7 @@ void __attribute__((interrupt, auto_psv)) _T4Interrupt() {
             }
             break;
         case TEST_CAPTURE_POST:
-            putTestVoltage(exp_mov_fetch(&vbat_avg).val);
+            putTestVoltage();
             
             if (++test_time > test_time_until) {
                 test_phase = TEST_COOLDOWN;
@@ -235,16 +251,16 @@ void setCurrent(int duty) {
     OC1RS = duty;
 }
 
-uint32_t bigbytesToInt32(char* data) {
-    return (uint32_t)data[3] << 24
-         | (uint32_t)data[2] << 16
-         | (uint32_t)data[1] << 8
-         | (uint32_t)data[0] << 0;
+uint32_t bigbytesToInt32(uint8_t* data) {
+    return (uint32_t)data[0] << 24
+         | (uint32_t)data[1] << 16
+         | (uint32_t)data[2] << 8
+         | (uint32_t)data[3] << 0;
 }
 
-uint16_t bigbytesToInt16(char* data) {
-    return (uint16_t)data[1] << 8
-         | (uint16_t)data[0] << 0;
+uint16_t bigbytesToInt16(uint8_t* data) {
+    return (uint16_t)data[0] << 8
+         | (uint16_t)data[1] << 0;
 }
 
 int handle_test(char* data, int len){
@@ -267,7 +283,7 @@ int handle_test(char* data, int len){
 }
 
 int handle_status(char* data, int len){
-    uart_transmit("TODO: status\n", 13);
+    uart_transmit("sTODO: status\n", 14);
     
     return CMD_END;
 }
@@ -315,9 +331,9 @@ void setup() {
     //LATBbits.LATB8 = 0; //
     
     // Set RA4, RB4, and RA3 as Outputs
-    TRISAbits.TRISA4 = 0; // 100 Ohm
-    TRISBbits.TRISB4 = 0; // 500 Ohm
-    TRISAbits.TRISA3 = 0; // 2000 Ohm
+    //TRISAbits.TRISA4 = 0; // 100 Ohm
+    //TRISBbits.TRISB4 = 0; // 500 Ohm
+    //TRISAbits.TRISA3 = 0; // 2000 Ohm
     // ============== end Digital Pins ==============
     
     
@@ -334,8 +350,8 @@ void setup() {
     // AD1CON1bits.FORM = 0b00;  // integer format (0 - 1023)
     
     AD1CON2bits.CSCNA = 1; // Turn on channel scanning (ignore CH0SA)
-    AD1CSSL = 1 << BAT_VOLTAGE_PIN; // cycle through AN0 through AN4
-    //AD1CHSbits.CH0NA = BAT_VOLTAGE_PIN;
+    AD1CSSL = 1 << BAT_VOLTAGE_PIN; // right now we only scan through one pin
+    //AD1CHSbits.CH0NA = BAT_VOLTAGE_PIN; // could use this instead
     
     AD1CON2bits.SMPI = (8-1); // interrupt after 8 conversion cycle(s)
     AD1CON2bits.BUFM = 1;     // split the buffers into 2x8 and use BUFS bit to check
@@ -488,11 +504,10 @@ int main() {    //main will need all setup functions, write UARTS, and sending s
         
         CUU_setCursor_2d(&screen, 0, 0);
         CUU_print_str(&screen, "v: ");
-        avg_fetch avg = exp_mov_fetch(&vbat_avg);
+        CUU_print_uint(&screen, exp_mov_poll(&vbat_avg), 10);
         
-        CUU_print_uint(&screen, avg.val >> 1, 10);
         CUU_print_str(&screen, " p: ");
-        CUU_print_uint(&screen, avg.purity, 10);
+        CUU_print_uint(&screen, last_purity, 10);
         CUU_print_str(&screen, "  ");
         
         CUU_setCursor_2d(&screen, 0, 1);
@@ -509,10 +524,17 @@ int handle_unknown(char* data, int len) {
     return CMD_END;
 }
 
+int handle_ping(char* data, int len) {
+    uart_transmit("p", 1);
+    return CMD_END;
+}
+
 handler_ptr uart_get_handler(char cmd_id) {
     switch (cmd_id) {
         case 's':
             return handle_status;
+        case 'p':
+            return handle_ping;
         case 'T':
             return handle_test;
         case 'l':
@@ -579,7 +601,8 @@ void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
             output_buf_back &= OUTPUT_BUFFER_MASK;
         } else {
             // we empty! dump some data into the buffer and re-loop!
-            if (output_buf_lock) {
+            if (output_buf_lock || vbat_avg.purity < PURITY_THRESHOLD) {
+                // TODO: quick fix remove this check ^
                 return; // race condition! abort!
             }
             
@@ -590,13 +613,16 @@ void __attribute__((interrupt, auto_psv)) _U1TXInterrupt() {
                 test_buf_back &= TEST_BUFFER_MASK;
                 bigEndian = (bigEndian >> 8) | (bigEndian << 8);
                 uart_transmit((char*) &bigEndian, 2);
-            } else {
+            } else if (test_phase == TEST_IDLE) {
                 U1TXREG = 'v'; // put = exp_mov_fetch(&vbat_avg); it in the buffer early to buy some time
                 avg_fetch avg = exp_mov_fetch(&vbat_avg); 
                 bigEndian = avg.val;
                 last_purity = avg.purity;
                 bigEndian = (bigEndian >> 8) | (bigEndian << 8);
                 uart_transmit((char*) &bigEndian, 2);
+            } else {
+                // nothing to put on the buffer!
+                break;
             }
         }
     }

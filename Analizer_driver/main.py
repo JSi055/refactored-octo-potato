@@ -4,6 +4,7 @@ import random
 import sys
 import termios
 import threading
+import serial.tools.miniterm
 
 import dash
 from dash import dcc
@@ -14,6 +15,9 @@ import serial
 import time
 
 import commands
+import database
+
+loop: asyncio.events
 
 # array of [pulseid, data[x][y]]
 pulse_results_queue = queue.Queue(10)
@@ -21,30 +25,34 @@ pulse_results_queue = queue.Queue(10)
 # arrays for saving data points
 traces_data = {}
 
-def update_traces():
+
+def update_pulse_traces():
     global traces_data
 
+    all_pulse_data = database.get_pulse_tests()
+
     # take a bunch of data from the queue
-    while not pulse_results_queue.empty():
-        pulse_result = pulse_results_queue.get(block=False)
-        traces_data[pulse_result[0]](pulse_result[1])
+    #while not pulse_results_queue.empty():
+    #    pulse_result = pulse_results_queue.get(block=False)
+    #    traces_data[pulse_result[0]](pulse_result[1])
 
     traces = []
-    for id in traces_data:
+    for id in all_pulse_data:
         traces.append(go.Scatter(
-            name = "A" + str(id),
-            x = traces_data[id][0],
-            y = traces_data[id][1]
+            name = "P" + str(id),
+            x = all_pulse_data[id][0],
+            y = all_pulse_data[id][1]
         ))
 
     return traces
 
+
 def update_figure():
     plot = go.Figure(
-        data=update_traces(), layout=dict(
+        data=update_pulse_traces(), layout=dict(
             xaxis_title="time",
             yaxis_title="Voltage",
-            yaxis_range=[1.0, 4.0]
+            yaxis_range=[-1.0, 8.0]
             # yaxis=dict(domain=[0.0, 0.5])
         )
     )
@@ -53,14 +61,6 @@ def update_figure():
 
 # GUI layout/design
 app = dash.Dash(__name__, update_title=None)
-app.layout = html.Div(
-    children = [
-        html.H1('Pulse Tests'),
-        dcc.Graph(id='live-graph', figure=update_figure()),
-        dcc.Interval(id='update_graph', interval=20000)
-        #html.Button(id='textout', children='text')
-    ]
-)
 
 
 # update part where data is read and the plot and data arrays are updated
@@ -71,25 +71,55 @@ def update(i_input):
 
 
 async def run_auto_test(com: serial.Serial):
-    while com.is_open():
-        await asyncio.sleep(30) # test every 30s
-        await commands.trigger_test(com, 4000, 500, 2000, 10.0)
+    await asyncio.sleep(8)  # test every 30s
+    print("pulse test...")
+    await commands.trigger_test(com, 50000, 5000, 50000, 10.0)
+    print("complete.")
+    while com.is_open:
+        await asyncio.sleep(8) # test every 30s
+        await commands.get_ping(com)
+        print("pulse test...")
+        await commands.trigger_test(com, 50000, 5000, 50000, 10.0)
+        print("complete.")
+
 
 async def run_user_input(com: serial.Serial):
-    while com.is_open():
-        command = input("> ").split()
+    reader = asyncio.StreamReader(loop=asyncio.get_running_loop())
+    protocol = asyncio.StreamReaderProtocol(reader)
+    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+
+    while com.is_open:
+        command = (await reader.readline()).decode("UTF-8").split()
+        if len(command) < 1:
+            continue
+        print(command)
         if command[0] == "help":
-            print("lol, nope\n")
-        elif command[0] == "l":
-            print("set load to ")
-            commands.set_load(float(command[1]))
+            print("lol, nope")
+        elif command[0] == "load":
+            await commands.set_load(com, float(command[1]))
+            print("set load to " + command[1])
+        elif command[0] == 'status':
+            print("status string: " + await commands.get_status(com))
+        elif command[0] == 'test':
+            print("running test...")
+            await commands.trigger_test(com, 4000, 500, 2000, 10.0)
+            print("done")
+        elif command[0] == 'exit':
+            print("closing connections")
+            exit() #TODO: close database
+        else:
+            print("unknown command")
+
 
 async def main():
+    global loop
+    loop = asyncio.get_running_loop()
+    commands.set_loop(loop)
 
     port = '/dev/ttyUSB0'
     baud = 115200
-    if len(sys.argv) > 0:
-        port = sys.argv[0]
+    if len(sys.argv) >= 2:
+        port = sys.argv[1]
 
     #############################
     # magical mystery code from https://stackoverflow.com/questions/15460865/disable-dtr-in-pyserial-from-code
@@ -101,19 +131,36 @@ async def main():
     #f.close()
     #############################
 
-    com = serial.Serial()
-    com.port = port
-    com.baudrate = baud
-    com.timeout = 60 # TODO: make this longer
-    com.dtr = True
+    com = serial.serial_for_url(
+                port,
+                baud,
+                parity='N',
+                rtscts=False,
+                xonxoff=False,
+                do_not_open=True)
+
+    #com = serial.Serial()
+    #com.port = port
+    #com.baudrate = baud
+    #com.timeout = 60 # TODO: make this longer
+    #com.dtr = True
     com.open()
+
+    database.loadDatabase("test.db")
+
+    io_tasks = asyncio.gather(
+        asyncio.create_task(asyncio.to_thread(commands.run_process_rx, com)),
+        asyncio.create_task(run_auto_test(com)),
+        asyncio.create_task(run_user_input(com))
+    )
 
     retry_count = 0
     print("getting status...")
-    while 1==1:
+    while True:
         try:
-            async with asyncio.timeout(10):
-                print(await commands.get_status(com))
+            #async with asyncio.timeout(10):
+            status = await commands.get_status(com)
+            print(status)
             break
         except TimeoutError:
             if retry_count >= 5:
@@ -121,15 +168,21 @@ async def main():
                 exit(1)
             print("Timeout. Retrying...")
 
-    io_threads = asyncio.gather(
-        asyncio.to_thread(commands.run_process_rx(com)),
-        asyncio.to_thread(run_auto_test(com)),
-        asyncio.to_thread(run_user_input(com))
+    # init UI
+    app.layout = html.Div(
+        children=[
+            html.H1('Pulse Tests'),
+            dcc.Graph(id='live-graph', figure=update_figure()),
+            dcc.Interval(id='update_graph', interval=10000)
+            # html.Button(id='textout', children='text')
+        ]
     )
 
-    # init UI
-    app.run_server()
-    await io_threads
+    webapp_thread = threading.Thread(target=app.run_server)
+    webapp_thread.start()
+    await io_tasks
+    webapp_thread.join()
+
 
 if __name__ == '__main__':
     asyncio.run(main())

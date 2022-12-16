@@ -2,6 +2,7 @@ import asyncio
 
 import serial
 import sqlite3
+import main
 
 import calibration as cal
 import database
@@ -10,17 +11,23 @@ futures_complete_event = asyncio.Event()
 futures_lock = asyncio.Lock()
 
 last_future_id = 0
+future_ids = set()
 futures = {}
+
+#FIXME: we might want a signle thread for write operations so races dont happen
 
 ##### TODO: Ugly global state. Put this in a class as it is state associated with that connection.
 cal_curve_voltage = cal.CalCurve()
 cal_curve_voltage.points = [cal.Point(0, 0.0), cal.Point(2500, 4.410)]
 cal_curve_current = cal.CalCurve()
 cal_curve_current.points = [cal.Point(0, 0.0), cal.Point(255, 14.286)] # FIXME: this is calculated
+
+loop: asyncio.events
 ##### End ugly global state
 
 # TX and RX
 CMD_STATUS = b's' # print a status string
+CMD_PING = b'p'   # ping the device
 CMD_TEST = b'T'   # trigger a test pulse
 
 # 0x01 : enable stream voltage
@@ -39,31 +46,54 @@ CMD_CALIBRATE = b'c' # calibrate voltage, current, or % (v, c, %) at points (1 t
                      # with decimal values X.X
 CMD_SET_LOAD = b'l'  # set the load in micro amps
 
-
-def get_status(com: serial.Serial) -> asyncio.Future:
-    stuff = create_command_future(ord(CMD_STATUS))
-    com.write(CMD_STATUS) # send the status command
-    return stuff[0]
+def set_loop(l: asyncio.events):
+    global loop
+    loop = l
 
 
-def trigger_test(com: serial.Serial, dur_us: int, pre_dur_us: int, post_dur_us: int, current: float) -> asyncio.Future:
-    stuff = create_command_future(ord(CMD_STATUS))
-    database.putStartTest(dur_us, pre_dur_us, post_dur_us, current);
+async def get_status(com: serial.Serial) -> str:
+    stuff = await create_command_future(ord(CMD_STATUS))
+
+    await asyncio.to_thread(com.write, CMD_STATUS) # send the status command
+    return await stuff[0]
+
+
+async def get_ping(com: serial.Serial):
+    stuff = await create_command_future(ord(CMD_PING))
+
+    await asyncio.to_thread(com.write, CMD_PING) # send the status command
+    return await stuff[0]
+
+
+def _trigger_test(com: serial.Serial, dur_us: int, pre_dur_us: int, post_dur_us: int, current: float):
+    database.putStartTest(dur_us, pre_dur_us, post_dur_us, current)
     com.write(b"T"
               + int.to_bytes(dur_us, 4, "big")
               + int.to_bytes(pre_dur_us, 4, "big")
               + int.to_bytes(post_dur_us, 4, "big")
               + int.to_bytes(cal_curve_current.y_to_x(current), 2, "big"))
-    return stuff[0]
 
 
-def set_load(com: serial.Serial, current: float):
-    com.write(b"l" + cal_curve_current.y_to_x(current).to_bytes(2, "big"))
+async def trigger_test(com: serial.Serial, dur_us: int, pre_dur_us: int, post_dur_us: int, current: float):
+    stuff = await create_command_future(ord(CMD_TEST))
+    await asyncio.to_thread(_trigger_test, com, dur_us, pre_dur_us, post_dur_us, current)
+    return await stuff[0]
+
+
+async def set_load(com: serial.Serial, current: float):
+    def io_stuff():
+        com.write(b"l" + cal_curve_current.y_to_x(current).to_bytes(2, "big"))
+        com.flush()
+    await asyncio.to_thread(io_stuff)
 
 
 def handle_status(com: serial.Serial):
-    status = com.readline() # read until a new-line char
-    complete_command_future(ord(CMD_STATUS), status)
+    status = com.readline().decode("UTF-8") # read until a new-line char
+    safe_complete_cmd_future(ord(CMD_STATUS), status)
+
+
+def handle_ping(com: serial.Serial):
+    safe_complete_cmd_future(ord(CMD_PING), None)
 
 
 def handle_error(com: serial.Serial):
@@ -78,6 +108,7 @@ def handle_voltage_stream(com: serial.Serial):
 
 def handle_test(com: serial.Serial):
     database.putTestComplete()
+    safe_complete_cmd_future(ord(CMD_TEST), None)
     #TODO: update the traces in the graph!
 
 
@@ -87,66 +118,77 @@ def handle_test_stream(com: serial.Serial):
     database.putTestVoltage(volt_value)
 
 
-def complete_command_future(cmd_id: int, data: any):
+def safe_complete_cmd_future(cmd_id: int, data: any):
+    global loop
+    asyncio.run_coroutine_threadsafe(complete_command_future(cmd_id, data), loop)
+
+
+async def complete_command_future(cmd_id: int, data: any):
     global futures
     global futures_lock
 
     cmd_futures = {}
-    futures_lock.acquire()
+    await futures_lock.acquire()
     if cmd_id in futures:
-        cmd_futures = futures[cmd_id].copy()
+        cmd_futures = futures[cmd_id]
     futures_lock.release()
 
-    for future in cmd_futures:
-        future.set_result(data)  # complete the future outside the lock as it will use it
+    for future in cmd_futures.values():
+        future.set_result(data) # complete the future outside the lock as it will use it
 
-def create_command_future(cmd_id: int) -> (asyncio.Future, int):
+
+async def create_command_future(cmd_id: int) -> (asyncio.Future, int):
     global last_future_id
     global futures
     global futures_lock
     global futures_complete_event
     future = asyncio.Future()
 
-    while 1==1:
-
-        futures_lock.acquire()
-        if len(futures) < 256:
-            while last_future_id in futures:
+    while True:
+        await futures_lock.acquire()
+        if len(future_ids) < 256:
+            while last_future_id in future_ids:
                 last_future_id = (last_future_id + 1) % 256
 
             fid = last_future_id
+            future_ids.add(fid)
 
-            def completed(f: asyncio.Future):
-                futures_lock.acquire()
-                if futures[cmd_id].len <= 1:
+            async def completed(f: asyncio.Future):
+                data = await f
+                await futures_lock.acquire()
+                if len(futures[cmd_id]) <= 1:
                     futures.pop(cmd_id)
                 else:
                     futures[cmd_id].pop(fid)
                 futures_lock.release()
                 futures_complete_event.set()
+                return data
 
-            future.add_done_callback(completed)
             if cmd_id not in futures:
                 futures[cmd_id] = {}
             futures[cmd_id][fid] = future
 
+            # we are returning so release the lock NOW
             futures_lock.release()
-            return future, fid
+
+            return completed(future), fid
 
         futures_lock.release()
         # the queue is full. wait for another command to complete its result
-        futures_complete_event.wait()
+        await futures_complete_event.wait()
         futures_complete_event.clear()
 
 unknown_cmd_ids = {}
 
 
-async def run_process_rx(com: serial.Serial):
-    while com.is_open():
+def run_process_rx(com: serial.Serial):
+    while com.is_open:
         cmd_id = com.read()
 
         if cmd_id == CMD_STATUS:
             handle_status(com)
+        elif cmd_id == CMD_PING:
+            handle_ping(com)
         elif cmd_id == CMD_ERROR:
             handle_error(com)
         elif cmd_id == CMD_VOLTAGE_STREAM:
@@ -158,6 +200,11 @@ async def run_process_rx(com: serial.Serial):
         else:
             # unknown command
             if cmd_id not in unknown_cmd_ids:
-                print("Got bad command id '" + cmd_id + "', ignoring in the future\n")
+                char = "unknown"
+                try:
+                    char = cmd_id.decode("UTF-8")
+                except UnicodeDecodeError:
+                    nothing = 0
+                print("Got bad command id '0x" + cmd_id.hex() + "' (" + char + "), ignoring in the future\n")
             unknown_cmd_ids[cmd_id] = 1
 

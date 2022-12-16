@@ -48,7 +48,7 @@ class CalCurve:
                 break
 
         # x = my + b # linear interpolation
-        return ((y - point1.y) * (point2.x - point1.x)) / (point2.y - point1.y) + point1.x
+        return round(((y - point1.y) * (point2.x - point1.x)) / (point2.y - point1.y) + point1.x)
 
     @property
     def points(self):

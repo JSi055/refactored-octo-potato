@@ -25,7 +25,7 @@ uint16_t exp_mov_poll(average_moving_exponential* moving) {
     if (diff > 1 || diff < -1) {
         moving->anti_flicker_val = new_val;
     }
-    return moving->anti_flicker_val;
+    return moving->anti_flicker_val >> 1;
 }
 
 avg_fetch exp_mov_fetch(average_moving_exponential* moving) {
