@@ -98,11 +98,28 @@ def putTestVoltage(voltage: float):
 # returns {id: [time,voltage][values]}
 def get_pulse_tests() -> dict:
     global polling_cur
+    global test_id
     all_tests = {}
     with lock:
+        inc = round(test_id / 15)
+        if inc < 1:
+            inc = 1
+        for pulseid in range(1,test_id+1, inc):
+            polling_cur.execute("SELECT value FROM pulseTests WHERE pulseid=" + str(pulseid))
+            test = []
+            if pulseid not in all_tests:
+                test = [[], []]
+                all_tests[pulseid] = test
+            else:
+                test = all_tests[pulseid]
+
+            for i, value in enumerate(polling_cur.fetchall()):
+                test[0].append(i)
+                test[1].append(value[0])
+        """
         polling_cur.execute("SELECT pulseid, value FROM pulseTests")
         i = 0
-        last_pulseid = -1;
+        last_pulseid = -1
         for (pulseid, value) in polling_cur.fetchall():
             test = []
             if pulseid not in all_tests:
@@ -117,6 +134,7 @@ def get_pulse_tests() -> dict:
                 i += 1
             test[0].append(i)
             test[1].append(value)
+            """
     return all_tests
 
 

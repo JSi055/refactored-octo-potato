@@ -18,7 +18,7 @@ futures = {}
 
 ##### TODO: Ugly global state. Put this in a class as it is state associated with that connection.
 cal_curve_voltage = cal.CalCurve()
-cal_curve_voltage.points = [cal.Point(0, 0.0), cal.Point(2500, 4.410)]
+cal_curve_voltage.points = [cal.Point(0, 0.0), cal.Point(2500, 3.150)]
 cal_curve_current = cal.CalCurve()
 cal_curve_current.points = [cal.Point(0, 0.0), cal.Point(255, 14.286)] # FIXME: this is calculated
 

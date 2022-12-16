@@ -74,7 +74,7 @@ volatile uint16_t debug_profile;
 #define CURRENT_CLUTCH_PIN LATAbits.LATA2
 #define CURRENT_PWM_PIN 4 // RP4 - note: hard coded elsewere
 
-#define PURITY_THRESHOLD 500
+#define PURITY_THRESHOLD 128
 
 // ##### TEST PULSE #####
 volatile char test_phase = TEST_IDLE;
@@ -146,7 +146,7 @@ void __attribute__((interrupt, auto_psv)) _ADC1Interrupt() {
 void putTestVoltage() {
     avg_fetch vtest = exp_mov_fetch(&vbat_avg);
     last_purity = vtest.purity;
-    test_buffer[test_buf_front++] = vtest.val;
+    test_buffer[test_buf_front++] = vtest.val; // FIXME
     test_buf_front &= TEST_BUFFER_MASK; // avoid % to save cycles
     if (test_buf_front == test_buf_back) {
         // o no! buffer overflow!
@@ -170,7 +170,7 @@ void __attribute__((interrupt, auto_psv)) _T4Interrupt() {
             TMR4 = 0;
             // sample every vbat_avg setpoint has passed
             // PR4 = 140 * 64 / 64
-            PR4 = ((uint32_t)PR3 << vbat_avg.setpoint) >> 5;
+            PR4 = ((uint32_t)PR3 << vbat_avg.setpoint) >> 6;
             test_time = 0;
             test_time_until = (test_pre_dur_us >> 2) / PR4;
             
@@ -426,7 +426,7 @@ void setup() {
     __builtin_write_OSCCONL(OSCCON | 0x40);
     
     U1MODE = 0;
-    U1BRG = 34;              //34 = baud = 115200 TODO: try faster speeds if it works
+    U1BRG = 34;               // 34 = baud = 115200 TODO: try faster speeds if it works
     U1MODEbits.BRGH = 1;      // fast mode (divide by 4 instead of 16 for U1BRG)
     U1MODEbits.PDSEL = 0b00;  // no parity. TODO: use software parity or hardware
     U1MODEbits.STSEL = 0;     // one stop bit
