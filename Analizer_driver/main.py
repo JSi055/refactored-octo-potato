@@ -73,15 +73,15 @@ def update(i_input):
 async def run_auto_test(com: serial.Serial):
     await asyncio.sleep(8)
     print("Starting discharge test...")
-    await commands.set_load(com, 10.0)
+    await commands.set_load(com, 5.0)
     print("current set to 10.0mA")
     await asyncio.sleep(8)
     while com.is_open:
         await commands.get_ping(com)
         print("pulse test...")
-        await commands.trigger_test(com, 50000, 5000, 50000, 15.0)
+        await commands.trigger_test(com, 50000, 5000, 50000, 10.0)
         print("complete.")
-        await asyncio.sleep(3*60) # test every 30s
+        await asyncio.sleep(10) # test every 30s
 
 
 async def run_user_input(com: serial.Serial):
@@ -117,7 +117,7 @@ async def main():
     loop = asyncio.get_running_loop()
     commands.set_loop(loop)
 
-    port = '/dev/ttyUSB0'
+    port = '/dev/ttyUSB1'
     baud = 115200
     if len(sys.argv) >= 2:
         port = sys.argv[1]
